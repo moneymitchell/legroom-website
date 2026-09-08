@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>LEGROOM</title>
+  <meta name="description" content="We find the work that eats your team's time and build systems that do it for you.">
+  <meta name="theme-color" content="#1479DC">
+
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="LEGROOM">
+  <meta property="og:description" content="We find the work that eats your team's time and build systems that do it for you.">
+  <meta property="og:url" content="https://legroomcompany.com">
+  <meta property="og:image" content="https://legroomcompany.com/assets/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="LEGROOM">
+  <meta name="twitter:description" content="We find the work that eats your team's time and build systems that do it for you.">
+  <meta name="twitter:image" content="https://legroomcompany.com/assets/og-image.jpg">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@500&family=Oswald:wght@700&display=swap">
+
+  <style>
+    :root {
+      --sky: #1479DC;
+      --charcoal: #1C1C1A;
+      --bone: #F2EFE9;
+      --yellow: #FFC800;
+      --yellow-base: #C79B00;
+      --font-display: Oswald, "Arial Narrow", "Roboto Condensed", "Helvetica Neue", Arial, sans-serif;
+      --font-body: "DM Sans", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      --lift: 10px;                        /* extrusion depth at rest */
+      --press: calc(var(--lift) - 2px);    /* travel on press: face sinks to a 2px base, silhouette height unchanged */
+      --content-top: 40%;                  /* vertical anchor of the content block */
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: var(--sky);
+      overflow: hidden;
+    }
+
+    body {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      font-family: var(--font-body);
+      color: var(--charcoal);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .sky {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .sky img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center center;
+    }
+
+    .content {
+      position: absolute;
+      z-index: 1;
+      left: 50%;
+      top: var(--content-top);
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: max-content;
+      max-width: 100%;
+      padding: 0 16px;
+    }
+
+    .logo {
+      display: block;
+      width: clamp(260px, 42vw, 560px);
+      height: auto;
+      aspect-ratio: 4496.7 / 896;
+    }
+
+    /* The sign: a chunky arcade button. */
+    .sign {
+      --depth: var(--lift);
+      position: relative;
+      display: inline-block;
+      margin-top: 5vh;
+      margin-bottom: calc(var(--lift) + 3px);   /* reserve the extrusion so nothing crowds it */
+      width: 276px;                               /* fixed, so a wider fallback font cannot resize the sign */
+      height: 66px;
+      line-height: 60px;                          /* 66 minus the 3px borders */
+      padding: 0 44px;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 26px;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+      text-align: center;
+      text-decoration: none;
+      white-space: nowrap;
+      color: var(--charcoal);
+      background: var(--yellow);
+      border: 3px solid var(--charcoal);
+      border-radius: 14px;                        /* deliberate exception to the sharp-corners rule */
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      transform: translateY(0);
+      box-shadow:
+        inset 0 2px 0 rgba(255, 255, 255, .45),
+        0 var(--depth) 0 var(--yellow-base),
+        0 var(--depth) 0 3px var(--charcoal),
+        0 calc(var(--depth) + 8px) 22px rgba(0, 0, 0, .28);
+      transition: transform 90ms ease-out, box-shadow 90ms ease-out;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      .sign:hover {
+        --depth: 12px;
+        transform: translateY(-2px);
+        box-shadow:
+          inset 0 2px 0 rgba(255, 255, 255, .45),
+          0 var(--depth) 0 var(--yellow-base),
+          0 var(--depth) 0 3px var(--charcoal),
+          0 calc(var(--depth) + 10px) 30px rgba(0, 0, 0, .30);
+      }
+    }
+
+    .sign:active,
+    .sign:focus-visible {
+      --depth: 2px;
+      transform: translateY(var(--press));
+      box-shadow:
+        inset 0 2px 0 rgba(255, 255, 255, .25),
+        0 var(--depth) 0 var(--yellow-base),
+        0 var(--depth) 0 3px var(--charcoal),
+        0 calc(var(--depth) + 4px) 12px rgba(0, 0, 0, .22);
+    }
+
+    .sign:focus { outline: none; }
+    .sign:focus-visible {
+      outline: 3px solid var(--bone);
+      outline-offset: 5px;
+    }
+
+    .email {
+      margin-top: 10px;
+      font-family: var(--font-body);
+      font-weight: 500;
+      font-size: 15px;
+      line-height: 22px;
+      letter-spacing: .08em;
+      font-variant-caps: all-small-caps;
+      color: rgba(28, 28, 26, .85);
+      text-decoration: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .email:hover,
+    .email:focus-visible { text-decoration: underline; text-underline-offset: 3px; }
+    .email:focus-visible { outline: 2px solid var(--bone); outline-offset: 3px; }
+
+    @media (max-width: 767px) {
+      :root { --lift: 8px; --content-top: 29%; }   /* 29%, not 38%: the mobile crop has a cloud bank at 26 to 31% */
+      .sign { font-size: 19px; height: 54px; line-height: 48px; padding: 0 20px; width: 208px; }
+      .sign:hover { --depth: 10px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .sign { transition: background-color 90ms ease-out; }
+      .sign:hover, .sign:active, .sign:focus-visible {
+        --depth: var(--lift);
+        transform: none;
+        box-shadow:
+          inset 0 2px 0 rgba(255, 255, 255, .45),
+          0 var(--depth) 0 var(--yellow-base),
+          0 var(--depth) 0 3px var(--charcoal),
+          0 calc(var(--depth) + 8px) 22px rgba(0, 0, 0, .28);
+      }
+      .sign:hover { background: #FFD43B; }
+      .sign:active, .sign:focus-visible { background: #E6B400; }
+    }
+  </style>
+</head>
+<body>
+  <picture class="sky">
+    <source media="(min-width: 768px)" srcset="assets/sky-desktop.webp 1x, assets/sky-desktop@2x.webp 2x" type="image/webp">
+    <source media="(min-width: 768px)" srcset="assets/sky-desktop.jpg 1x, assets/sky-desktop@2x.jpg 2x" type="image/jpeg">
+    <source srcset="assets/sky-mobile.webp 1x, assets/sky-mobile@2x.webp 2x" type="image/webp">
+    <img src="assets/sky-mobile.jpg" srcset="assets/sky-mobile.jpg 1x, assets/sky-mobile@2x.jpg 2x" width="941" height="1672" alt="" aria-hidden="true" fetchpriority="high">
+  </picture>
+
+  <main class="content">
+    <img class="logo" src="assets/legroom-lockup-horizontal-charcoal.svg" width="4496.7" height="896" alt="Legroom">
+    <a class="sign" href="mailto:jd@legroomcompany.com">Coming Soon</a>
+    <a class="email" href="mailto:jd@legroomcompany.com">jd@legroomcompany.com</a>
+  </main>
+</body>
+</html>
