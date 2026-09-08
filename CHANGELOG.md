@@ -4,6 +4,12 @@ All notable changes to legroomcompany.com. Format follows Keep a Changelog. Date
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-08
+
+### Changed
+- Mobile: stacked lockup (mark over wordmark) replaces the horizontal one. Logo paths are now `<symbol>`s reused by both compositions.
+- Mobile: background scaled to 118% and top-anchored so the cloud bank sits lower and the lockup has clear sky. Content block anchored at 25%.
+
 ## [1.1.0] - 2026-09-08
 
 ### Changed
