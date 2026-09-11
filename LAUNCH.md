@@ -134,7 +134,7 @@ The non-secret values live in `wrangler.jsonc` under `vars`. After Cal.com exist
 Two more are **build-time** and belong in `.env.local` for local work and in the Cloudflare build environment for deploys:
 
 ```
-PUBLIC_CAL_LINK=legroom/breakdown
+PUBLIC_CAL_LINK=https://cal.com/jdworcester/15min
 PUBLIC_TURNSTILE_SITE_KEY=0x4AAAAAAA...
 ```
 
@@ -154,9 +154,14 @@ These are public by design: they are compiled into the HTML and visible in view-
 
 ## 3. Cal.com
 
-The whole site funnels to one thing: a 45-minute breakdown. This is that thing.
+The whole site funnels to one thing: a free 15-minute breakdown. This is that thing.
 
-**The link is live: `https://cal.com/jdworcester/discovery`.** It is already wired into
+R3 dropped the ask from 45 minutes to 15. Forty-five was the largest hurdle on the page and
+it was being asked for before any trust existed. Fifteen is a number someone says yes to
+without opening a calendar, and the call still does its job: find the most expensive thing
+the team does by hand and put a number on it.
+
+**The link is live: `https://cal.com/jdworcester/15min`.** It is already wired into
 `.env`, into `vars.CAL_LINK` in `wrangler.jsonc` so the confirmation email carries it, and
 into `.dev.vars` so `wrangler dev` matches production.
 
@@ -167,25 +172,24 @@ has no idea the link exists and every CTA silently falls back to `/contact`. Wor
 Pages → legroom-web → Settings → Variables and Secrets → add a **build** variable:
 
 ```
-PUBLIC_CAL_LINK = https://cal.com/jdworcester/discovery
+PUBLIC_CAL_LINK = https://cal.com/jdworcester/15min
 ```
 
 A test fails the build if this is missing, so you will find out at deploy time rather than
 from a prospect.
 
-Second, confirm the event settings. The slug is named `discovery`, but the site says
-"breakdown" in six places and "45 minutes" in six more. Nothing breaks either way, but the
-booking page and the site should use the same word, and the event has to actually be 45
-minutes long.
+Second, confirm the event settings. The slug now matches the ask, but the event itself has
+to actually be 15 minutes: the site says so in eight places, and a booking page that opens
+on 45 undoes the whole reason for the change.
 
 1. Open the event type at cal.com and check:
    - Title: reads as the breakdown, not a generic discovery call
-   - Duration: **45 minutes**
-   - Description: paste the offer language from the site so the booking page matches: *Forty-five minutes on how work actually moves through your business. We size what it's costing you, then hand you the two things worth automating first, with the hours and dollars attached. No pitch.*
+   - Duration: **15 minutes**
+   - Description: paste the offer language from the site so the booking page matches: *Fifteen minutes on how work actually moves through your business. We find the most expensive thing your team is doing by hand, size it out loud, and tell you what we would automate first. No pitch, and you keep the number either way.*
 2. **Availability**: set real hours. Two things that matter more than they sound:
    - **Minimum notice: 12 hours.** Without it someone books you for 20 minutes from now.
    - **Buffer after: 15 minutes.** You will want to write the notes up while they are fresh.
-   - **Limit: 2 per day, 6 per week.** You take two builds a month; you do not need forty calls.
+   - **Limit: 4 per day, 10 per week.** Up from 2 and 6. A 15-minute call is a quarter of the old commitment, so the cap that protected a 45-minute day is now throttling the funnel instead of the calendar.
 3. **Apps → Google Calendar → Install**, and connect the jd@legroomcompany.com calendar. Set it as both the "check for conflicts" calendar and the "add bookings to" calendar. Without this you will double-book yourself.
 4. **Event Type → Advanced → Booking questions**: add one required question, *What part of the week keeps disappearing?* You will walk into every call already knowing the answer.
 5. **Workflows → New**: "Reminder", email to attendee, 24 hours before. Then a second, SMS to attendee, 1 hour before. SMS reminders are the single biggest no-show reducer.
@@ -371,7 +375,7 @@ If you do it:
 3. Category: primary **Business management consultant**. Secondary: **Software company**, **Marketing consultant**.
 4. **Hide your address.** Choose "I deliver goods and services to my customers" and set the service area to Washington State, or the specific counties you work in.
 5. Verification will most likely be video: a recorded walkthrough showing your workspace, evidence of the business, and you. Have a business card, a laptop with the site open, and any paperwork ready. It takes about five minutes.
-6. Description, 750 characters. Reuse the site's language rather than inventing new copy: *Legroom finds the work eating a business's week and builds the systems that do it instead. We start with a free 45-minute breakdown: how work actually moves through your business, what the manual version costs in hours and dollars, and the two automations worth building first. Builds are quoted flat. Youth sports and home services.*
+6. Description, 750 characters. Reuse the site's language rather than inventing new copy: *Legroom finds the work eating a business's week and builds the automated workflows that free you up to do what matters. We start with a free 15-minute breakdown: how work actually moves through your business, the most expensive thing your team is doing by hand, and what it is costing you. Builds are quoted flat. Youth sports and home services.*
 7. Photos: the logo (use `public/icon-512.png`), a cover image (use `public/og-image.jpg`), and two or three real photos of you working. Stock photography on a GBP is obvious and it cheapens the listing.
 8. Website: `https://legroomcompany.com`. Add the UTM if you want the attribution: `?utm_source=google&utm_medium=organic&utm_campaign=gbp`.
 9. First review: after your next delivered build, ask that client directly with the short link from the dashboard. One real review beats ten thin ones and gets you past the "no reviews" look.
