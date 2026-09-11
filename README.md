@@ -202,7 +202,7 @@ The slitscan loops start on `requestIdleCallback`. Running them from load put 19
 
 ### Tests
 
-70 Playwright tests, all passing: axe at four breakpoints on four pages, the full keyboard path with focus-ring assertions, tap targets, heading order, metadata and JSON-LD, the button press physics, the deck timeline wiring, reduced motion, no-JavaScript form and deck behaviour, horizontal-overflow checks at 1920 / 1440 / 1024 / 768 / 390, the five dataLayer events with their payloads, the sticky rail's seven keyframe sets surviving minification and its stations lighting in sequence, the pointer-tilt lerp and its touch fallback, every booking CTA resolving to cal.com, and a zero-tolerance em dash scan over the source, the rendered pages and the email bodies.
+71 Playwright tests, all passing: axe at four breakpoints on four pages, the full keyboard path with focus-ring assertions, tap targets, heading order, metadata and JSON-LD, the button press physics, the deck timeline wiring, reduced motion, no-JavaScript form and deck behaviour, horizontal-overflow checks at 1920 / 1440 / 1024 / 768 / 390, the five dataLayer events with their payloads, the sticky rail's seven keyframe sets surviving minification and its stations lighting in sequence, the pointer-tilt lerp and its touch fallback, every booking CTA resolving to cal.com, the sticky rail staying out of the page's hit tests, and a zero-tolerance em dash scan over the source, the rendered pages and the email bodies.
 
 ---
 
