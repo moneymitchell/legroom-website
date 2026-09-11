@@ -12,7 +12,7 @@
  *   3. reject the honeypot and impossibly fast submissions
  *   4. verify the Turnstile token server-side, failing closed
  *   5. write the lead to D1
- *   6. notify JD, and confirm to the submitter, via Resend
+ *   6. Resend sends the submitter their booking link, then sends JD the alert
  *   7. reply with JSON, or a 303 to /thanks for the no-JS path
  *
  * The lead is written to D1 BEFORE either email is attempted. A Resend failure
@@ -21,6 +21,8 @@
  * Nothing here logs a full submission. Addresses are recorded in D1 because
  * that is the point; they are not written to the log stream.
  * ========================================================================= */
+
+import { mail, type LeadFields } from "../src/content/emails";
 
 export interface Env {
   ASSETS: Fetcher;
@@ -146,9 +148,24 @@ async function handleLead(request: Request, env: Env, ctx: ExecutionContext): Pr
     return reply(wantsJson, { ok: false, error: "store" }, 500, env);
   }
 
-  // 7. mail, after the response is committed. Resend's free tier is 3,000 a
-  //    month but only 100 a day, and the daily cap is the one that bites.
-  ctx.waitUntil(sendMail(row, env));
+  // 7. Mail, after the response is committed, and instantly rather than on a
+  //    delay. A delay would cost the moment of highest intent and buy nothing;
+  //    what makes the reply feel personal is the writing, not the timing.
+  //    Resend's free tier is 3,000 a month but only 100 a day, and the daily
+  //    cap is the one that bites.
+  ctx.waitUntil(
+    sendMail(
+      {
+        email: row.email,
+        name: row.name,
+        message: row.message,
+        source: row.source,
+        userAgent: row.user_agent,
+        createdAt: row.created_at,
+      },
+      env,
+    ),
+  );
 
   return reply(wantsJson, { ok: true }, 200, env);
 }
@@ -244,70 +261,69 @@ async function sha256(v: string): Promise<string> {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-/* --- mail ----------------------------------------------------------------- */
+/* --- mail -----------------------------------------------------------------
+   Order matters: the submitter is answered first, then JD is told. If the
+   daily cap is hit mid-pair, the person who raised their hand is the one who
+   got the email.
 
-async function sendMail(
-  row: { email: string; name?: string; message?: string; source: string; created_at: string },
-  env: Env,
-): Promise<void> {
+   Both bodies live in src/content/emails.ts so the wording can be edited
+   without touching any logic here. Only the booking link and the submitted
+   fields are templated.
+
+   Nothing in here can fail the request. The row is already in D1 before this
+   runs, and it runs inside waitUntil, so a delivery failure is a logged
+   warning and the browser still sees success. A lead that reached the
+   database is not a failed submission.
+   ------------------------------------------------------------------------ */
+
+async function sendMail(lead: LeadFields, env: Env): Promise<void> {
   if (!env.RESEND_API_KEY || !env.MAIL_FROM || !env.NOTIFY_TO) {
     console.warn("resend not configured; lead stored, no mail sent");
     return;
   }
-  const book = env.CAL_LINK || `${env.SITE_URL ?? "https://legroomcompany.com"}/contact`;
 
-  const notify = {
+  const bookingUrl = env.CAL_LINK || mail.fallbackBookingUrl;
+  const replyTo = env.NOTIFY_TO;
+
+  // 1. the person who just submitted
+  const toSubmitter = {
+    from: env.MAIL_FROM,
+    to: [lead.email],
+    reply_to: replyTo,
+    subject: mail.submitter.subject,
+    text: mail.submitter.body({ bookingUrl }),
+  };
+
+  // 2. JD. Reply-To is the submitter, so hitting reply answers them.
+  const toJd = {
     from: env.MAIL_FROM,
     to: [env.NOTIFY_TO],
-    reply_to: row.email,
-    subject: `New lead: ${row.email} (${row.source})`,
-    text: [
-      `Email:   ${row.email}`,
-      row.name ? `Name:    ${row.name}` : null,
-      `Source:  ${row.source}`,
-      `When:    ${row.created_at}`,
-      row.message ? `\n${row.message}` : null,
-    ]
-      .filter(Boolean)
-      .join("\n"),
+    reply_to: lead.email,
+    subject: mail.alert.subject(lead.email),
+    text: mail.alert.body(lead),
   };
 
-  const confirm = {
-    from: env.MAIL_FROM,
-    to: [row.email],
-    subject: "Your Legroom breakdown",
-    text: [
-      row.name ? `${row.name},` : "Hi,",
-      "",
-      "Thanks for reaching out. One of us reads every note and you'll hear back from a real person, usually the same day.",
-      "",
-      "If you'd rather skip the back and forth, grab the 45 minutes here:",
-      book,
-      "",
-      "The breakdown is free, there's no pitch, and you keep the one page either way.",
-      "",
-      "JD",
-      "The Legroom Company",
-    ].join("\n"),
-  };
+  for (const payload of [toSubmitter, toJd]) {
+    await send(payload, env);
+  }
+}
 
-  for (const payload of [notify, confirm]) {
-    try {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          authorization: `Bearer ${env.RESEND_API_KEY}`,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        // 429 here is the 100/day cap. The lead is already in D1.
-        console.warn(`resend ${res.status} for ${payload.subject}`);
-      }
-    } catch (err) {
-      console.warn("resend threw", err instanceof Error ? err.message : "unknown");
+async function send(payload: Record<string, unknown>, env: Env): Promise<void> {
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${env.RESEND_API_KEY}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      // 429 here is the 100/day free-tier cap. The lead is already in D1.
+      console.warn(`resend ${res.status} for "${String(payload.subject)}"`);
     }
+  } catch (err) {
+    console.warn("resend threw", err instanceof Error ? err.message : "unknown");
   }
 }
 

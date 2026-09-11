@@ -38,16 +38,16 @@ export const mail = {
      * Four short lines. What it is, the link on its own line, a way out that
      * is not the link, and a name.
      */
-    body: ({ bookingUrl, siteUrl }: { bookingUrl: string; siteUrl: string }) =>
+    body: ({ bookingUrl }: { bookingUrl: string }) =>
       [
         "Thanks for reaching out.",
         "",
-        "The breakdown is 45 minutes on how work actually moves through your business. We size what it is costing you, then hand you the two things worth automating first, with the hours and dollars attached. No pitch, and you keep the one page either way.",
+        "The breakdown is 45 minutes on how work actually moves through your business. We size what it is costing you, then hand you the two things worth automating first, with the hours and dollars attached. No pitch, and the one page is yours either way.",
         "",
-        "Pick a time here:",
+        "Pick a time:",
         bookingUrl,
         "",
-        `If you would rather not book yet, just reply to this email with your website (${siteUrl.replace(/^https?:\/\//, "")} is mine) and I will take a look before we talk.`,
+        "Not ready to book? Reply to this email with your website and I will take a look before we talk.",
         "",
         "JD",
       ].join("\n"),
