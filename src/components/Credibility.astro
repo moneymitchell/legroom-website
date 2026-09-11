@@ -105,6 +105,14 @@ const { credibility } = site;
     grid-template-columns: 404px 1fr;
     gap: 74px;
     align-items: stretch;
+    /* 669 frame minus 76 + 68 of band padding. R4 cut a clause off the body
+       copy, which took two lines out of the left column and collapsed the
+       whole band by 55px. The frame is the approved one, so it is held here
+       rather than left to whatever the longest column happens to be this
+       week. Nothing has to move to absorb it: the heading block is anchored
+       to the top and .sell is anchored to the bottom by margin-top:auto, so
+       the cut lands in the gap between them, which is where it belongs. */
+    min-height: 525px;
   }
   .col,
   .colr {

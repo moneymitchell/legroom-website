@@ -210,7 +210,7 @@ export const site = {
     headlineLead: "this since ",
     headlineUnderline: "2019",
     headlineTail: ".",
-    body: "Not a new agency riding a trend. Seven years of growth work, early on AI since the first models that could actually ship it, and results across four industries that had nothing in common except the same bottleneck.",
+    body: "Not a new agency riding a trend. Seven years of growth work, early on AI since the first models that could actually ship it.",
     /* R2: the three chips became three real selling points, bottom aligned
        with the client table. */
     selling: [
@@ -336,7 +336,7 @@ export const site = {
       { key: "Time", value: "15 minutes on a call. First build usually live in 2–4 weeks." },
       {
         key: "After",
-        value: "Monthly partnership if you want it. Not required, never auto-renewed.",
+        value: "Monthly partnership or one time project. Results well worth the investment.",
       },
       {
         key: "Fit",
