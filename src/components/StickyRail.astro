@@ -52,7 +52,7 @@ const { rail } = site;
             {i > 0 && <li class={`seg g${i}`} aria-hidden="true" />}
             <li class={`station s${i + 1}`}>
               <i class="stationdot" aria-hidden="true" />
-              <span>{stop}</span>
+              <span data-station>{stop}</span>
             </li>
           </>
         ))
@@ -113,13 +113,18 @@ const { rail } = site;
     letter-spacing: 0.2em;
     text-transform: uppercase;
     white-space: nowrap;
-    /* Unlit is --ink-2, not the --ink-3 the rest of the site dims labels with.
-       --ink-3 on this bar's white measures 2.5:1 and fails AA. The audited
-       --ink-3 findings elsewhere are inherited brand values the brief says to
-       report rather than change; this bar is new in R3, so it clears 4.5:1.
-       The light-up still reads: #6b675e to #23221f, with the yellow line
-       arriving at the dot doing most of the work. */
-    color: var(--ink-2);
+    /* R4: unlit is --ink-3, the token the rest of the site dims labels with.
+       R3 held it at --ink-2 to clear AA, but at that weight the lit and unlit
+       states sat too close together to read as a sequence, which is the only
+       reason the bar exists. #96917f to #23221f is the full swing, and the
+       dot takes it too through currentColor.
+
+       That puts a fourth --ink-3 pair in the audited contrast findings, on
+       the bar's white rather than on paper or Manila. Decided, not drifted
+       into: the four phrases restate an argument the page already makes in
+       full, every station reaches full contrast within one 8s cycle, and
+       reduced motion shows all four permanently lit at --ink. */
+    color: var(--ink-3);
   }
   .stationdot {
     width: 7px;
@@ -174,7 +179,7 @@ const { rail } = site;
   @keyframes lit1 {
     0%,
     4% {
-      color: #6b675e;
+      color: #96917f;
     }
     8%,
     88% {
@@ -182,13 +187,13 @@ const { rail } = site;
     }
     89%,
     100% {
-      color: #6b675e;
+      color: #96917f;
     }
   }
   @keyframes lit2 {
     0%,
     26% {
-      color: #6b675e;
+      color: #96917f;
     }
     30%,
     88% {
@@ -196,13 +201,13 @@ const { rail } = site;
     }
     89%,
     100% {
-      color: #6b675e;
+      color: #96917f;
     }
   }
   @keyframes lit3 {
     0%,
     48% {
-      color: #6b675e;
+      color: #96917f;
     }
     52%,
     88% {
@@ -210,13 +215,13 @@ const { rail } = site;
     }
     89%,
     100% {
-      color: #6b675e;
+      color: #96917f;
     }
   }
   @keyframes lit4 {
     0%,
     70% {
-      color: #6b675e;
+      color: #96917f;
     }
     74%,
     88% {
@@ -224,7 +229,7 @@ const { rail } = site;
     }
     89%,
     100% {
-      color: #6b675e;
+      color: #96917f;
     }
   }
 

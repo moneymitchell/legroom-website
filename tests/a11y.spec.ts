@@ -129,6 +129,15 @@ test.describe("axe", () => {
      *   #96917F on #EAE5DA  2.51:1  --ink-3 on Manila (same, in the offer band)
      *   #6B675E on #EAE5DA  4.48:1  --ink-2 on Manila (body copy, 0.02 short)
      *   #E9B300 on #F4F1EA  1.70:1  --yellow-deep on paper (the Q&A labels)
+     *
+     * The rail's unlit stations are a fifth finding, ~2.2:1, handled below
+     * rather than here because its background is composited. It is R4 and the
+     * only one of the five that is ours rather than the reference's. The rail's unlit stations were held at --ink-2 to clear
+     * AA, and at that weight lit and unlit sat too close together to read as
+     * a sequence, which is the only thing the bar is for. Weighed and taken:
+     * the four phrases restate an argument the page already makes in full,
+     * every station reaches --ink within one 8s cycle, and reduced motion
+     * shows all four permanently lit.
      */
     const KNOWN = new Set([
       "#96917f on #f4f1ea",
@@ -136,7 +145,24 @@ test.describe("axe", () => {
       "#6b675e on #eae5da",
       "#e9b300 on #f4f1ea",
     ]);
-    const unexpected = [...new Set(found.map((f) => `${f.fg} on ${f.bg}`))].filter(
+    /**
+     * The rail is separated out before the check. It is translucent white over
+     * whatever happens to be scrolled under it, so axe composites a slightly
+     * different near-white every run (#FAF9F7, #FDFCFA, ...) and a set of
+     * literal pair strings can never match it. Keyed on the element instead,
+     * via the data-station marker the rail carries for exactly this, and its
+     * foreground is asserted on its own line so changing that colour still
+     * fails loudly. Keyed on the marker rather than the class because axe
+     * reports the element holding the text, which is the span, not the li.
+     */
+    const railNodes = found.filter((f) => f.html.includes("data-station"));
+    const rest = found.filter((f) => !f.html.includes("data-station"));
+    expect(
+      [...new Set(railNodes.map((f) => f.fg))],
+      "the rail's unlit stations are audited at --ink-3 and nothing else",
+    ).toEqual(railNodes.length > 0 ? ["#96917f"] : []);
+
+    const unexpected = [...new Set(rest.map((f) => `${f.fg} on ${f.bg}`))].filter(
       (pair) => !KNOWN.has(pair),
     );
     expect(unexpected, "a colour pair started failing contrast that was not in the audit").toEqual([]);
