@@ -1,0 +1,19 @@
+node_modules
+dist
+.astro
+.wrangler
+
+# env: never commit real values. .env.example is tracked and holds placeholders only.
+.env
+.env.*
+!.env.example
+
+# test + audit output
+test-results
+playwright-report
+tests/__screenshots__/*-actual.png
+tests/__screenshots__/*-diff.png
+.lighthouseci
+
+.DS_Store
+*.log

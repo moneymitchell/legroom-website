@@ -1,0 +1,39 @@
+{
+  "name": "legroom-web",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "typecheck": "tsc --noEmit",
+    "test:visual": "playwright test tests/visual.spec.ts",
+    "test:a11y": "playwright test tests/a11y.spec.ts",
+    "lh": "lhci autorun",
+    "assets": "node scripts/build-assets.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "private": "true",
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "astro": "^7.3.2",
+    "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@lhci/cli": "^0.15.1",
+    "@playwright/test": "^1.63.0",
+    "pixelmatch": "^7.2.0",
+    "playwright": "^1.63.0",
+    "pngjs": "^7.0.0",
+    "sharp": "^0.35.4",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.131.0"
+  }
+}
