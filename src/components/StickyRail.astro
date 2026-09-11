@@ -73,6 +73,13 @@ const { rail } = site;
     background: rgba(255, 255, 255, 0.85);
     border-top: 1px solid var(--rule);
     box-shadow: 0 -6px 18px rgba(28, 28, 26, 0.06);
+    /* Nothing in here is clickable, and a fixed strip across the bottom 57px
+       of every viewport is otherwise a hit-test trap: any CTA that scrolls
+       under it stops responding, with no visible reason why. Verified with
+       elementFromPoint before this line existed, the bar won across the full
+       width. The body padding keeps the footer clear at rest; this keeps
+       everything clickable on the way there. */
+    pointer-events: none;
   }
   /* Only where it is supported. Without it the 85% white still reads correctly,
      it just does not soften what scrolls underneath. */

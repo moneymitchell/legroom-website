@@ -580,6 +580,22 @@ test.describe("the sticky rail", () => {
     await ctx.close();
   });
 
+  test("it does not swallow clicks on whatever scrolls under it", async ({ page }) => {
+    await page.goto("/");
+    // Nothing in the bar is interactive, so it must not win a hit test. Without
+    // pointer-events: none any CTA that scrolls into the bottom 57px stops
+    // responding and gives the reader no clue why.
+    const caught = await page.evaluate(() => {
+      const bar = document.querySelector(".railbar")!.getBoundingClientRect();
+      const y = Math.round(bar.top + bar.height / 2);
+      return [40, 300, 720, 1100, 1380]
+        .map((x) => document.elementFromPoint(x, y))
+        .filter((el) => el && el.closest(".railbar"))
+        .map((el) => (el as Element).tagName);
+    });
+    expect(caught, "the rail is taking hits meant for the page under it").toEqual([]);
+  });
+
   test("the old ticker is gone from the wordmark section", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("section.brk .stop")).toHaveCount(0);
