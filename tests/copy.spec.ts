@@ -84,6 +84,26 @@ test("the other tells of machine-written copy are absent", async ({ page }) => {
   }
 });
 
+test("contractions use the typographic apostrophe, not a straight quote", () => {
+  // The design is consistent about this and mixed quotes look sloppy at
+  // Oswald's weight. Only word-internal quotes are checked, so the TypeScript
+  // string delimiters are untouched.
+  const offenders: string[] = [];
+  for (const file of [join(ROOT, "src/content/site.ts"), join(ROOT, "src/content/emails.ts")]) {
+    readFileSync(file, "utf8")
+      .split("\n")
+      .forEach((line, i) => {
+        const t = line.trim();
+        // comments are code, not copy
+        if (t.startsWith("//") || t.startsWith("*") || t.startsWith("/*")) return;
+        if (/[A-Za-z]'[A-Za-z]/.test(line)) {
+          offenders.push(`${file.replace(ROOT + "/", "")}:${i + 1}  ${t.slice(0, 80)}`);
+        }
+      });
+  }
+  expect(offenders, "use \u2019 rather than ' inside a word").toEqual([]);
+});
+
 test("the email bodies are clean too", () => {
   const emails = readFileSync(join(ROOT, "src/content/emails.ts"), "utf8");
   expect(emails.includes(EM_DASH), "em dash in an email body").toBe(false);

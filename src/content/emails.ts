@@ -42,7 +42,7 @@ export const mail = {
       [
         "Thanks for reaching out.",
         "",
-        "The breakdown is 45 minutes on how work actually moves through your business. We size what it is costing you, then hand you the two things worth automating first, with the hours and dollars attached. No pitch, and the one page is yours either way.",
+        "It is 15 minutes on how work actually moves through your business. We find the most expensive thing your team is doing by hand and tell you what it is costing you. No pitch, and you keep the number either way.",
         "",
         "Pick a time:",
         bookingUrl,

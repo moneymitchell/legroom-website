@@ -85,7 +85,7 @@ export const site = {
     url: "https://legroomcompany.com",
     title: "Legroom, we give owners their legroom back",
     description:
-      "We find the work eating your team's week and build the systems that do it for you. Free 45-minute business breakdown, no pitch.",
+      "We find the work eating your team’s week and build the automated workflows that free you up to do what matters. Free 15-minute call, no pitch.",
     ogImage: "/og-image.jpg",
     ogImageAlt: "Legroom. We give owners their legroom back.",
     locale: "en_US",
@@ -115,7 +115,7 @@ export const site = {
     headlineLead: "their",
     headlineHighlight: "LEGROOM",
     headlineAfter: "back.",
-    sub: "We find the work eating your team's week and build the systems that do it for you.",
+    sub: "We find the work eating your team’s week and build the automated workflows that free you up to do what matters.",
     ctaPrimary: "Book a free breakdown",
     ctaSecondary: "Send us a note",
     trust: "Operating since 2019",
@@ -142,16 +142,16 @@ export const site = {
 
   /* --- 2. the breakdown --------------------------------------------------- */
   breakdown: {
-    eyebrow: "The free breakdown · 45 minutes · no pitch",
+    eyebrow: "The free breakdown · 15 minutes · no pitch",
     headlineLines: ["We sit down,", "we do the math,", "you keep the "],
     headlineHighlight: "one page",
     headlineTail: ".",
-    lead: "Forty-five minutes on how work actually moves through your business. We size what it is costing you, then hand you the two things worth automating first, with the hours and dollars attached.",
+    lead: "Fifteen minutes on how work actually moves through your business. We find the most expensive thing your team is doing by hand, size it out loud, and tell you what we would automate first.",
     steps: [
       {
         n: "01",
         title: "We sit down with you",
-        body: "One conversation. How a job gets from first call to paid, where it jams, and who it lands on.",
+        body: "One short call. How a job gets from first call to paid, where it jams, and who it lands on.",
       },
       {
         n: "02",
@@ -193,7 +193,7 @@ export const site = {
       caption: "The one page. Your numbers, ready to act on.",
     },
     get: {
-      eyebrow: "What you'll get",
+      eyebrow: "What you’ll get",
       items: [
         "The two automations worth building first, ranked",
         "What the manual version costs you today, in hours and dollars",
@@ -307,23 +307,33 @@ export const site = {
 
   /* --- 5. wordmark break -------------------------------------------------- */
   wordmark: {
-    /* A subway line: each stop lights left to right, all stay lit, then the
-       line resets. Pure CSS, eight keyframe sets. */
-    stops: ["Save time", "Make more money", "Prove it with numbers", "Keep improving it"],
     lockupAlt: "Legroom",
+  },
+
+  /* --- the sticky rail ----------------------------------------------------
+     Moved out of the wordmark section and onto a bar pinned to the bottom of
+     the viewport. Four stops, read in order, with a yellow train running the
+     line and lighting each one as it arrives. The order is the argument: try
+     it, measure it, bank the saving, put it back to work. */
+  rail: {
+    label: "How the work pays for itself",
+    stops: ["Try Legroom", "Measure the results", "Less time more money", "Reinvest and grow"],
   },
 
   /* --- 6. CTA + founders -------------------------------------------------- */
   cta: {
     eyebrow: "Last thing",
-    headlineLines: ["Two spots.", "Take one."],
-    lead: "We take two new builds a month so the work stays good. Start with the free breakdown. If the numbers are not worth your time, you have lost nothing but forty-five minutes.",
+    /* R3: the section was built on "two spots", which is a tag line, not an
+       argument. The real close is the size of the ask and an honest answer at
+       the end of it. */
+    headlineLines: ["Fifteen minutes.", "Then you decide."],
+    lead: "Most businesses your size are paying people to do work a system should be doing. We find the most expensive one and put a number on it. If there is real money on the table, you will see it on the call. If there is not, we say so, and you are out fifteen minutes.",
     qa: [
       {
         key: "Cost",
         value: "The breakdown is free. Builds are quoted flat, before any work starts.",
       },
-      { key: "Time", value: "45 minutes to sit down. First build usually live in 2–4 weeks." },
+      { key: "Time", value: "15 minutes on a call. First build usually live in 2–4 weeks." },
       {
         key: "After",
         value: "Monthly partnership if you want it. Not required, never auto-renewed.",
@@ -351,7 +361,7 @@ export const site = {
         photoAlt: "JD Worcester, founder of Legroom",
         firstName: "JD",
         lastName: "Worcester",
-        role: "Founder. Design, growth, and the systems underneath both.",
+        role: "Founder, Creative, Growth Hacker",
         school: "Santa Clara Univ · BS Management",
         socials: [
           { label: "LinkedIn", href: "https://www.linkedin.com/in/jdworcester/" },
@@ -364,7 +374,7 @@ export const site = {
           { label: "Currently building", value: "Dotted", href: "#" },
           { label: "Superpowers", value: "Design & Growth" },
         ],
-        bio: "Former college athlete and OpenAI beta tester. Nothing beats finding a powerful tool before the rest of the world knows it exists. Found the cheat codes so you do not have to.",
+        bio: "Former college athlete and OpenAI beta tester. Nothing beats finding a powerful tool before the rest of the world knows it exists. Found the cheat codes so you don’t have to.",
         quote: "Every owner I talk to is doing four jobs. I want to hand three of them back.",
       },
       {
@@ -373,14 +383,11 @@ export const site = {
         photoAlt: "Sean Ajulu-Okeke, partner on delivery at Legroom",
         firstName: "Sean",
         lastName: "Ajulu-Okeke",
-        role: "Partner on delivery. Build, security, and the parts that must not break.",
+        role: "Founder, Builder, Innovator",
         school: "Santa Clara Univ · BS Management",
-        // Both links point at JD's profiles in the approved reference. Flagged
-        // for JD rather than guessed at.
-        socials: [
-          { label: "LinkedIn", href: "https://www.linkedin.com/in/jdworcester/" },
-          { label: "jdworcester.com", href: "https://jdworcester.com/" },
-        ],
+        // JD’s personal site was on this card in the reference. Removed.
+        // Sean’s own LinkedIn URL is still needed; this one is JD’s.
+        socials: [{ label: "LinkedIn", href: "https://www.linkedin.com/in/jdworcester/" }],
         pills: ["Running", "Plants", "Lifting", "Traveling"],
         stats: [
           { label: "In the game since", value: "1994" },
@@ -391,8 +398,8 @@ export const site = {
           },
           { label: "Superpowers", value: "Full stack & security" },
         ],
-        bio: "Masters in software engineering and cybersecurity. Has lived and built in more countries than most people have visited. Reads the whole system before he touches any part of it, which is why the things he ships stay shipped.",
-        quote: "If it is going to break, I want to be the one who finds it.",
+        bio: "Masters in software engineering and cybersecurity. Has lived on almost every continent, now currently holding it down in SF. Technical skills second to none. When Sean ships, you know you’re getting something great.",
+        quote: "There’s always more money on the table, we just help you find it.",
       },
     ] as readonly Founder[],
   },
@@ -414,7 +421,7 @@ export const site = {
     namePlaceholder: "Jane Rivera",
     emailLabel: "Your email",
     emailPlaceholder: "you@yourcompany.com",
-    messageLabel: "What's going on",
+    messageLabel: "What’s going on",
     messagePlaceholder: "The part of the week that keeps disappearing.",
     submit: "Send it",
     back: "Back to the top",
@@ -422,9 +429,9 @@ export const site = {
 
   thanks: {
     eyebrow: "Got it",
-    headline: "That's in.",
+    headline: "That’s in.",
     lead: "One of us reads every note. You will hear back from a real person, usually same day.",
-    bookLine: "Want to skip the back and forth? Grab the 45 minutes now.",
+    bookLine: "Want to skip the back and forth? Grab the 15 minutes now.",
     cta: "Book a free breakdown",
     back: "Back to the site",
   },
@@ -433,14 +440,14 @@ export const site = {
 /**
  * Still waiting on JD.
  *
- *  1. The "Dotted" link on JD's card is href="#".
- *  2. Sean's LinkedIn and personal site both point at JD's URLs in the
+ *  1. The "Dotted" link on JD’s card is href="#".
+ *  2. Sean’s LinkedIn and personal site both point at JD’s URLs in the
  *     approved reference. Ported verbatim rather than guessed at.
  *  3. The hero illustration slot is an empty measured-drawing panel.
  */
 export const PLACEHOLDERS = [
-  "Dotted URL on JD's founder card",
-  "Sean's own LinkedIn and site URLs",
+  "Dotted URL on JD’s founder card",
+  "Sean’s own LinkedIn and site URLs",
   "Hero illustration artwork",
 ] as const;
 
