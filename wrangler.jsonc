@@ -1,0 +1,46 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "legroom-web",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-09-10",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // The static site. Requests that match a file are served straight from the
+  // asset store; anything else reaches the Worker, which is how /api/lead works
+  // while the rest of the site stays static.
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    "html_handling": "auto-trailing-slash"
+  },
+
+  "observability": { "enabled": true },
+
+  // Non-secret configuration. Secrets go in with `wrangler secret put` and are
+  // never written to this file. See LAUNCH.md section 2.
+  "vars": {
+    "SITE_URL": "https://legroomcompany.com",
+    "NOTIFY_TO": "jd@legroomcompany.com",
+    "MAIL_FROM": "Legroom <hello@legroomcompany.com>",
+    "CAL_LINK": ""
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "legroom-leads",
+      // replace with the id printed by `wrangler d1 create legroom-leads`
+      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  "kv_namespaces": [
+    {
+      "binding": "LEAD_RATE",
+      // replace with the id printed by `wrangler kv namespace create LEAD_RATE`
+      "id": "REPLACE_WITH_KV_NAMESPACE_ID"
+    }
+  ]
+}

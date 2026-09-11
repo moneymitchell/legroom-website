@@ -11,7 +11,11 @@ export default defineConfig({
   build: { inlineStylesheets: "always" },
   vite: {
     plugins: [tailwindcss()],
-    build: { cssMinify: "lightningcss" },
+    // NOT lightningcss. It folds `animation-timeline: --deck` into the
+    // `animation` shorthand, which cannot carry a timeline name, so the
+    // declaration becomes invalid and the founder-deck dots silently stop
+    // animating. Same failure as the missing timeline-scope, different cause.
+    build: { cssMinify: "esbuild" },
   },
   devToolbar: { enabled: false },
 });

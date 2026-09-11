@@ -128,11 +128,14 @@ const { cta, founders } = site;
                       <div class="socials">
                         {
                           f.socials.map((s) => (
-                            <a href={s.href}>
-                              {s.label} <span aria-hidden="true">↗</span>
-                              <span class="sr-only">
-                                , {f.firstName} {f.lastName}, opens in a new tab
-                              </span>
+                            // One text node, exactly as drawn. The accessible
+                            // name carries the founder, so a screen reader does
+                            // not hear "LinkedIn" four times on the page.
+                            <a
+                              href={s.href}
+                              aria-label={`${s.label}, ${f.firstName} ${f.lastName}`}
+                            >
+                              {`${s.label} ↗`}
                             </a>
                           ))
                         }

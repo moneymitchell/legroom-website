@@ -42,6 +42,14 @@ function loadEmbed(): Promise<void> {
   return loading;
 }
 
+/** Marks the booking links so the loader can find them in one pass. */
+export function tagCalLinks(slug: string): void {
+  if (!slug) return;
+  for (const a of document.querySelectorAll<HTMLAnchorElement>('a[href^="https://cal.com/"]')) {
+    a.dataset.calLink = slug;
+  }
+}
+
 export function initCal(slug: string): void {
   if (!slug) return;
   const triggers = document.querySelectorAll<HTMLAnchorElement>("a[data-cal-link]");

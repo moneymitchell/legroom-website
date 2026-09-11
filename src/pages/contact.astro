@@ -15,7 +15,6 @@ import { bookHref } from "@/lib/links";
  */
 const c = site.contact;
 const cap = site.breakdown.capture;
-const turnstileKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 ---
 
 <Base
@@ -85,12 +84,9 @@ const turnstileKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
   <Footer />
 </Base>
 
-<script define:vars={{ turnstileKey }}>
-  window.__LEGROOM__ = { calSlug: "", turnstileKey };
-</script>
 <script>
   import { initForms } from "@/scripts/form";
-  initForms(window.__LEGROOM__?.turnstileKey ?? "");
+  initForms(import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "");
 </script>
 
 <style>

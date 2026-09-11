@@ -82,7 +82,7 @@ export const site = {
     url: "https://legroomcompany.com",
     title: "Legroom — We give owners their legroom back",
     description:
-      "We find the work eating your team's week and build the systems that do it for you. Free 45-minute business breakdown, no pitch.",
+      "We find the work eating your team’s week and build the systems that do it for you. Free 45-minute business breakdown, no pitch.",
     ogImage: "/og-image.jpg",
     ogImageAlt: "Legroom. We give owners their legroom back.",
     locale: "en_US",
@@ -115,12 +115,12 @@ export const site = {
     headlineHighlight: "LEGROOM",
     headlineAfter: "back.",
     headlineLead: "their",
-    sub: "We find the work eating your team's week and build the systems that do it for you.",
+    sub: "We find the work eating your team’s week and build the systems that do it for you.",
     ctaPrimary: "Book a free breakdown",
     ctaSecondary: "Send us a note",
     trust: "Operating since 2019",
     /* The narrow-screen facts strip, from reference/08-mobile.html. It replaces
-       the trust line's job on phones, where the credibility band is a long
+       the trust line’s job on phones, where the credibility band is a long
        scroll away. Desktop never shows it. */
     mobileFacts: [
       { bold: "OPERATING SINCE 2019", rest: "" },
@@ -149,7 +149,7 @@ export const site = {
     headlineLines: ["We sit down,", "we do the math,", "you keep the "],
     headlineHighlight: "one page",
     headlineTail: ".",
-    lead: "Forty-five minutes on how work actually moves through your business. We size what it's costing you, then hand you the two things worth automating first — with the hours and dollars attached.",
+    lead: "Forty-five minutes on how work actually moves through your business. We size what it’s costing you, then hand you the two things worth automating first — with the hours and dollars attached.",
     steps: [
       {
         n: "01",
@@ -176,8 +176,8 @@ export const site = {
       /* Inline states for the progressive-enhancement handler. */
       sending: "Sending…",
       success: "Got it. Check your inbox — the booking link is in there.",
-      errorGeneric: "That didn't send. Email hello@legroomcompany.com and we'll pick it up.",
-      errorEmail: "That email address doesn't look right.",
+      errorGeneric: "That didn’t send. Email hello@legroomcompany.com and we’ll pick it up.",
+      errorEmail: "That email address doesn’t look right.",
       errorRate: "Too many tries. Give it a minute, then send again.",
     },
     receipt: {
@@ -193,11 +193,11 @@ export const site = {
       totalLabel: "Recovered / year",
       totalValue: "$61,400",
       footnote:
-        "Every figure tagged: observed, benchmark, or modeled. Nothing printed we can't source.",
+        "Every figure tagged: observed, benchmark, or modeled. Nothing printed we can’t source.",
       caption: "The one page. Your numbers, ready to act on.",
     },
     get: {
-      eyebrow: "What you'll get",
+      eyebrow: "What you’ll get",
       items: [
         "The two automations worth building first, ranked",
         "What the manual version costs you today, in hours and dollars",
@@ -268,14 +268,14 @@ export const site = {
       },
     ] as readonly ClientResult[],
     footnote:
-      "Four different industries. Same job every time: find the work that shouldn't be done by hand, and build the thing that does it.",
+      "Four different industries. Same job every time: find the work that shouldn’t be done by hand, and build the thing that does it.",
   },
 
   /* --- 4. the promise ----------------------------------------------------- */
   promise: {
     eyebrow: "The promise",
     headlineLines: ["You get the week back.", "We show you the receipt."],
-    lead: "Every build ships with a before-and-after. Hours in, hours out, dollars attached. If the number isn't real, we don't print it.",
+    lead: "Every build ships with a before-and-after. Hours in, hours out, dollars attached. If the number isn’t real, we don’t print it.",
     cards: [
       {
         figure: "15+ HOURS",
@@ -295,7 +295,7 @@ export const site = {
       },
     ] as readonly PromiseCard[],
     footnoteBefore:
-      "These are ranges from work we've done — not guarantees. Your breakdown replaces every one of them with ",
+      "These are ranges from work we’ve done — not guarantees. Your breakdown replaces every one of them with ",
     footnoteUnderline: "your numbers",
     footnoteAfter: ", pulled from your site, your volume, your market.",
   },
@@ -312,7 +312,7 @@ export const site = {
   cta: {
     eyebrow: "Last thing",
     headlineLines: ["Two spots.", "Take one."],
-    lead: "We take two new builds a month so the work stays good. Start with the free breakdown — if the numbers aren't worth your time, you've lost nothing but forty-five minutes.",
+    lead: "We take two new builds a month so the work stays good. Start with the free breakdown — if the numbers aren’t worth your time, you’ve lost nothing but forty-five minutes.",
     qa: [
       {
         key: "Cost",
@@ -325,7 +325,7 @@ export const site = {
       },
       {
         key: "Fit",
-        value: "Youth sports and home services. If we're not right for you, we'll say so.",
+        value: "Youth sports and home services. If we’re not right for you, we’ll say so.",
       },
     ] as readonly QARow[],
     ctaPrimary: "Book a free breakdown",
@@ -335,7 +335,7 @@ export const site = {
 
   founders: {
     /** Sits above the name on every card. */
-    cardEyebrow: "Who you'll sit down with",
+    cardEyebrow: "Who you’ll sit down with",
     cardOrg: "The Legroom Company",
     /** Accessible name for the scrollable deck region. */
     deckLabel: "Founder cards",
@@ -380,7 +380,7 @@ export const site = {
           { label: "Best number on the board", value: "[Stat]" },
           { label: "Home field", value: "[Focus]" },
         ],
-        bio: "[Bio to confirm.] Builds the systems that have to keep running after we leave — integrations, data, the unglamorous parts. If it breaks at 6am on a Saturday, he's the reason it doesn't.",
+        bio: "[Bio to confirm.] Builds the systems that have to keep running after we leave — integrations, data, the unglamorous parts. If it breaks at 6am on a Saturday, he’s the reason it doesn’t.",
         quote: "[Pull quote to confirm — one line, in his own words.]",
       },
     ] as readonly Founder[],
@@ -400,13 +400,13 @@ export const site = {
   /* --- contact page / no-JS fallback --------------------------------------- */
   contact: {
     eyebrow: "Send us a note",
-    headline: "Tell us what's eating the week.",
-    lead: "One email back from a real person. If a breakdown makes sense we'll send a booking link with it.",
+    headline: "Tell us what’s eating the week.",
+    lead: "One email back from a real person. If a breakdown makes sense we’ll send a booking link with it.",
     nameLabel: "Your name",
     namePlaceholder: "Jane Rivera",
     emailLabel: "Your email",
     emailPlaceholder: "you@yourcompany.com",
-    messageLabel: "What's going on",
+    messageLabel: "What’s going on",
     messagePlaceholder: "The part of the week that keeps disappearing.",
     submit: "Send it",
     back: "Back to the top",
@@ -414,8 +414,8 @@ export const site = {
 
   thanks: {
     eyebrow: "Got it",
-    headline: "That's in.",
-    lead: "One of us reads every note. You'll hear back from a real person, usually same day.",
+    headline: "That’s in.",
+    lead: "One of us reads every note. You’ll hear back from a real person, usually same day.",
     bookLine: "Want to skip the back-and-forth? Grab the 45 minutes now.",
     cta: "Book a free breakdown",
     back: "Back to the site",
@@ -428,21 +428,21 @@ export const site = {
  * substitute plausible-looking content.
  *
  *  1. [School]      — both founder cards
- *  2. [Last name]   — Sean's surname
+ *  2. [Last name]   — Sean’s surname
  *  3. [Year]        — Sean, "In the game since"
  *  4. [Stat]        — Sean, "Best number on the board"
  *  5. [Focus]       — Sean, "Home field"
- *  6. [Bio to confirm.]        — Sean's bio, first sentence
- *  7. [Pull quote to confirm]  — Sean's quote
+ *  6. [Bio to confirm.]        — Sean’s bio, first sentence
+ *  7. [Pull quote to confirm]  — Sean’s quote
  *  8. Founder + footer social hrefs are "#" until the real profile URLs exist.
  *  9. The hero illustration slot is an empty measured-drawing panel; JD is
  *     supplying a figure illustration later.
  */
 export const PLACEHOLDERS = [
   "[School] on both founder cards",
-  "Sean's last name",
-  "Sean's year, stat, focus",
-  "Sean's bio and pull quote",
+  "Sean’s last name",
+  "Sean’s year, stat, focus",
+  "Sean’s bio and pull quote",
   "Social profile URLs (founder cards + footer)",
   "Hero illustration artwork",
 ] as const;

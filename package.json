@@ -9,11 +9,16 @@
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p worker/tsconfig.json",
     "test:visual": "playwright test tests/visual.spec.ts",
     "test:a11y": "playwright test tests/a11y.spec.ts",
     "lh": "lhci autorun",
-    "assets": "node scripts/build-assets.mjs"
+    "assets": "node scripts/build-assets.mjs",
+    "deploy": "astro build && wrangler deploy",
+    "cf:dev": "astro build && wrangler dev",
+    "db:migrate": "wrangler d1 migrations apply legroom-leads --remote",
+    "test:pixels": "node scripts/compare-reference.mjs",
+    "test:design": "node scripts/compare-design.mjs"
   },
   "keywords": [],
   "author": "",
@@ -26,14 +31,16 @@
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.10",
     "@axe-core/playwright": "^4.13.0",
+    "@cloudflare/workers-types": "^5.20260911.1",
     "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.63.0",
     "pixelmatch": "^7.2.0",
     "playwright": "^1.63.0",
     "pngjs": "^7.0.0",
     "sharp": "^0.35.4",
-    "typescript": "^7.0.2",
+    "typescript": "^6.0.3",
     "wrangler": "^4.131.0"
   }
 }

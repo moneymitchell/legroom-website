@@ -87,6 +87,9 @@ const { wordmark } = site;
   }
 
   .ticker {
+    /* it is a <p>, so it would otherwise inherit the 1.62 body leading and
+       stand 1.8px taller than the band was drawn */
+    line-height: normal;
     display: flex;
     gap: 30px;
     justify-content: center;

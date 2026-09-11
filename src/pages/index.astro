@@ -7,9 +7,8 @@ import PromiseSection from "@/components/Promise.astro";
 import WordmarkBreak from "@/components/WordmarkBreak.astro";
 import Founders from "@/components/Founders.astro";
 import Footer from "@/components/Footer.astro";
-import { bookHref, contactHref, calSlug } from "@/lib/links";
+import { bookHref, contactHref } from "@/lib/links";
 
-const turnstileKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
 ---
 
 <Base>
@@ -24,23 +23,17 @@ const turnstileKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
   <Footer />
 </Base>
 
-<script define:vars={{ calSlug, turnstileKey }}>
-  // Tag the booking CTAs so the Cal loader can find them without a second pass.
-  if (calSlug) {
-    for (const a of document.querySelectorAll('a[href^="https://cal.com/"]')) {
-      a.setAttribute("data-cal-link", calSlug);
-    }
-  }
-  window.__LEGROOM__ = { calSlug, turnstileKey };
-</script>
-
 <script>
+  // No inline script: this module is bundled, and PUBLIC_* values are replaced
+  // at build time, so the config travels inside the bundle rather than in a
+  // separate <script> tag the CSP would have to allow.
   import { initSlitscans } from "@/scripts/slitscan";
   import { initForms } from "@/scripts/form";
-  import { initCal } from "@/scripts/cal";
+  import { initCal, tagCalLinks } from "@/scripts/cal";
+  import { calSlug } from "@/lib/links";
 
-  const cfg = window.__LEGROOM__ ?? { calSlug: "", turnstileKey: "" };
   initSlitscans();
-  initForms(cfg.turnstileKey);
-  initCal(cfg.calSlug);
+  initForms(import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "");
+  tagCalLinks(calSlug);
+  initCal(calSlug);
 </script>

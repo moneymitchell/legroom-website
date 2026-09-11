@@ -1,0 +1,40 @@
+---
+import Base from "@/layouts/Base.astro";
+import Button from "@/components/ui/Button.astro";
+import Footer from "@/components/Footer.astro";
+import { site } from "@/content/site";
+---
+
+<Base title="Not found — Legroom" description="That page isn't here." canonicalPath="/404" noindex>
+  <main id="main" class="page">
+    <div class="wrap">
+      <p class="eyebrow">404</p>
+      <h1>Nothing in this seat.</h1>
+      <p class="lead intro">
+        That page isn't here. The whole company fits on one page anyway.
+      </p>
+      <div class="cta">
+        <Button variant="yellow" href="/" arrow>Back to {site.meta.name}</Button>
+      </div>
+    </div>
+  </main>
+  <Footer />
+</Base>
+
+<style>
+  .page {
+    padding: 88px 0 64px;
+    min-height: 60vh;
+  }
+  h1 {
+    font-size: clamp(44px, 6vw, 76px);
+    margin-top: 16px;
+  }
+  .intro {
+    margin-top: 22px;
+    max-width: 440px;
+  }
+  .cta {
+    margin-top: 30px;
+  }
+</style>
