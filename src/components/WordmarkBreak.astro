@@ -279,10 +279,22 @@ const { wordmark } = site;
     }
   }
 
-  /* the end state of the loop, held still */
+  /* The end state of the loop, held still.
+     The selectors have to match the nth-child specificity above, not just
+     `.stop`. `.stop:nth-child(1)` is (0,2,0) and plain `.stop` is (0,1,0), so
+     a bare `.stop{animation:none}` loses and the ticker keeps running for
+     exactly the people who asked it not to. The reference has that bug;
+     this does not. Verified with a reduced-motion browser context in
+     tests/visual.spec.ts. */
   @media (prefers-reduced-motion: reduce) {
-    .stop,
-    .stop::after {
+    .stop:nth-child(1),
+    .stop:nth-child(3),
+    .stop:nth-child(5),
+    .stop:nth-child(7),
+    .stop:nth-child(1)::after,
+    .stop:nth-child(3)::after,
+    .stop:nth-child(5)::after,
+    .stop:nth-child(7)::after {
       animation: none;
     }
     .stop {

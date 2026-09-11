@@ -156,35 +156,41 @@ These are public by design: they are compiled into the HTML and visible in view-
 
 The whole site funnels to one thing: a 45-minute breakdown. This is that thing.
 
-1. Sign up at cal.com. Take the username `legroom` if it is free.
-2. **Event Types → New**:
-   - Title: `The free breakdown`
-   - URL: `breakdown` (so the link is `cal.com/legroom/breakdown`)
+**The link is live: `https://cal.com/jdworcester/discovery`.** It is already wired into
+`.env`, into `vars.CAL_LINK` in `wrangler.jsonc` so the confirmation email carries it, and
+into `.dev.vars` so `wrangler dev` matches production.
+
+**Two things to do with it.**
+
+First, set it in the Cloudflare dashboard. `.env` is not committed, so a production build
+has no idea the link exists and every CTA silently falls back to `/contact`. Workers &
+Pages → legroom-web → Settings → Variables and Secrets → add a **build** variable:
+
+```
+PUBLIC_CAL_LINK = https://cal.com/jdworcester/discovery
+```
+
+A test fails the build if this is missing, so you will find out at deploy time rather than
+from a prospect.
+
+Second, confirm the event settings. The slug is named `discovery`, but the site says
+"breakdown" in six places and "45 minutes" in six more. Nothing breaks either way, but the
+booking page and the site should use the same word, and the event has to actually be 45
+minutes long.
+
+1. Open the event type at cal.com and check:
+   - Title: reads as the breakdown, not a generic discovery call
    - Duration: **45 minutes**
    - Description: paste the offer language from the site so the booking page matches: *Forty-five minutes on how work actually moves through your business. We size what it's costing you, then hand you the two things worth automating first, with the hours and dollars attached. No pitch.*
-3. **Availability**: set real hours. Two things that matter more than they sound:
+2. **Availability**: set real hours. Two things that matter more than they sound:
    - **Minimum notice: 12 hours.** Without it someone books you for 20 minutes from now.
    - **Buffer after: 15 minutes.** You will want to write the notes up while they are fresh.
    - **Limit: 2 per day, 6 per week.** You take two builds a month; you do not need forty calls.
-4. **Apps → Google Calendar → Install**, and connect the jd@legroomcompany.com calendar. Set it as both the "check for conflicts" calendar and the "add bookings to" calendar. Without this you will double-book yourself.
-5. **Event Type → Advanced → Booking questions**: add one required question, *What part of the week keeps disappearing?* You will walk into every call already knowing the answer.
-6. **Workflows → New**: "Reminder", email to attendee, 24 hours before. Then a second, SMS to attendee, 1 hour before. SMS reminders are the single biggest no-show reducer.
-7. Copy the booking link.
+3. **Apps → Google Calendar → Install**, and connect the jd@legroomcompany.com calendar. Set it as both the "check for conflicts" calendar and the "add bookings to" calendar. Without this you will double-book yourself.
+4. **Event Type → Advanced → Booking questions**: add one required question, *What part of the week keeps disappearing?* You will walk into every call already knowing the answer.
+5. **Workflows → New**: "Reminder", email to attendee, 24 hours before. Then a second, SMS to attendee, 1 hour before. SMS reminders are the single biggest no-show reducer.
 
-Then set it in two places:
-
-```bash
-# build-time, so the buttons point at it
-echo 'PUBLIC_CAL_LINK=legroom/breakdown' >> .env.local
-```
-
-and in `wrangler.jsonc`, `vars.CAL_LINK` → `https://cal.com/legroom/breakdown`, so the confirmation email carries it.
-
-```bash
-npm run build && npx wrangler deploy
-```
-
-**Verify:** click "Book a free breakdown" on the live site. The Cal modal should open over the page. Book a slot with a personal email address. Check that it lands on the Google Calendar and that you and the test address both get the confirmation.
+**Verify:** click "Book a free breakdown" on the live site. The Cal modal should open over the page rather than navigating away. Book a slot with a personal email address. Check that it lands on the Google Calendar and that you and the test address both get the confirmation.
 
 ---
 
@@ -205,7 +211,9 @@ Transactional email. Free tier is 3,000 a month and **100 a day**. The daily cap
    The Worker sets `reply_to` to the submitter's address on your notification, so replying in Gmail goes straight to them.
 8. `npx wrangler deploy`.
 
-**Verify:** submit the form on the live site with a real address. You should get a notification, and that address should get the confirmation with the booking link. Then check the row landed:
+**Verify deliverability before any of this goes in front of a prospect.** Submit the form twice from the live site, once with a **Gmail** address and once with an **Outlook or Hotmail** address. Open both. The confirmation has to land in the **inbox**, not Promotions and not spam. Gmail and Outlook disagree often enough that passing one proves nothing about the other, and a breakdown request that lands in spam is a lead you never knew you had. If either one goes astray, the cause is almost always DNS: recheck SPF, DKIM and DMARC in section 1 before changing the email copy.
+
+Then check the row landed:
 
 ```bash
 npx wrangler d1 execute legroom-leads --remote \
@@ -314,7 +322,7 @@ What makes that true rather than wishful: the Consent Mode defaults above deny a
 
    That is a real loosening, and it is the price of GTM. If you would rather keep the strict policy, put the GA4 tag on the page directly instead of through GTM and use a nonce. Either way: deploy, open the console, and confirm there are no CSP violations before you trust a single number.
 
-   Check it with `npm run check:csp` after `npx wrangler dev`, which loads every page and reports any blocked request.
+   Check it with `npm run check:csp`. **It needs the Worker running first**: open a second shell, run `npm run cf:dev`, leave it up, then run the check. Without that it reports connection failures that look exactly like CSP failures and are not.
 
 ### 8e. Turn off the enhanced measurement you do not want
 

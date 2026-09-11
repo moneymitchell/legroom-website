@@ -23,24 +23,47 @@ async function settle(page: Page) {
   await page.evaluate(() => document.fonts.ready.then(() => true));
   await page.evaluate(async () => {
     const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+    // The founder rail is its own scroll container, and the second card sits a
+    // full card height down inside it, so it never comes near the viewport at
+    // rest and its lazy image never starts loading.
     const rail = document.querySelector<HTMLElement>(".rail");
+    const railBehavior = rail?.style.scrollBehavior;
     if (rail) {
       rail.style.scrollBehavior = "auto";
-      rail.scrollTop = rail.scrollHeight;
-      await wait(60);
+      for (const card of rail.querySelectorAll(".card")) {
+        card.scrollIntoView({ block: "nearest" });
+        await wait(220);
+      }
       rail.scrollTop = 0;
-      await wait(60);
+      await wait(120);
+      rail.style.scrollBehavior = railBehavior ?? "";
     }
+
     for (let y = 0; y < document.body.scrollHeight; y += window.innerHeight) {
       window.scrollTo(0, y);
-      await wait(30);
+      await wait(40);
     }
     window.scrollTo(0, 0);
-    await Promise.all(
-      [...document.images].map((i) =>
-        i.complete ? Promise.resolve() : Promise.race([i.decode().catch(() => {}), wait(3000)]),
-      ),
-    );
+
+    // Poll rather than sleep a guessed amount: decode() on an image the
+    // browser has not chosen to fetch yet never settles, so it cannot be
+    // awaited directly.
+    const deadline = Date.now() + 5000;
+    for (;;) {
+      const pending = [...document.images].filter((i) => !i.complete || i.naturalWidth === 0);
+      if (pending.length === 0 || Date.now() > deadline) break;
+      await wait(100);
+    }
+
+    // scrollIntoView moves the sequential focus navigation starting point, so
+    // a following Tab would start from the founders section rather than the
+    // top of the document. Put it back on the body.
+    const body = document.body;
+    body.setAttribute("tabindex", "-1");
+    body.focus({ preventScroll: true });
+    body.blur();
+    body.removeAttribute("tabindex");
   });
 }
 

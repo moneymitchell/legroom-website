@@ -19,12 +19,15 @@ npm run build                  # static output to ./dist
 npm run preview                # serve ./dist
 npm run check                  # astro check: types + templates
 npm run typecheck              # tsc on src and worker
-npm test                       # Playwright: 51 visual, behaviour, a11y and analytics tests
+npm test                       # Playwright: 65 visual, behaviour, a11y, copy and analytics tests
 npm run test:pixels            # diff every section against the handoff PNGs
 npm run test:design            # diff every section against the reference HTML
 npm run lh && npm run lh:report # Lighthouse CI, desktop
 npm run lh:mobile              # Lighthouse CI, mobile
 npm run assets                 # regenerate AVIF/WebP, OG card, favicons
+npm run emails                 # render both transactional emails as they will send
+npm run cf:dev                 # the Worker plus the built site, on :8788
+npm run check:csp              # needs cf:dev running in another shell first
 ```
 
 Tests run against the **production build**, never the dev server. A pass on `astro dev` proves nothing about what ships.
@@ -49,7 +52,7 @@ Every one came from `npm view <pkg> version` at build time, not from memory.
 | sharp | 0.35.4 | build-time only, for `npm run assets` |
 | pixelmatch / pngjs | 7.2.0 / 7.0.0 | visual regression only |
 
-No UI framework. No React. The three interactive pieces are vanilla TypeScript and total **3.2 KB gzipped**.
+No UI framework. No React. The interactive pieces are vanilla TypeScript and total **3.7 KB gzipped**.
 
 ---
 
@@ -64,7 +67,9 @@ src/
   layouts/Base.astro     head, metadata, JSON-LD, skip link
   components/            one file per section, in page order
   components/ui/         Button, ArcadeButton, Chip, Highlight, Underline, Arrow, EmailCapture
-  scripts/slitscan.ts    one canvas engine, two presets
+  scripts/slitscan.ts    one canvas engine, scaled by a data-intensity attribute
+  scripts/pointer-tilt.ts  pointer-tracked side depth on the buttons
+  content/emails.ts      both transactional email bodies
   scripts/form.ts        progressive enhancement for both forms
   scripts/cal.ts         lazy Cal.com embed
   pages/                 index, contact, thanks, 404, sitemap.xml
@@ -87,12 +92,14 @@ Six of these were called out in the handoff. All six are honoured, and two more 
 
 1. **The sharpie highlight is an SVG behind the text.** Three overlapping paths, `mix-blend-mode: multiply`, rotated `-0.55deg`. The wrapper carries `z-index: 0` to open a stacking context; without it the `z-index: -1` child paints behind the section background and vanishes completely. Asserted in `tests/visual.spec.ts`.
 2. **Buttons travel the full 5px.** Rest on a 5px charcoal base, hover lifts 2px onto a 7px base and the face brightens to `#FFD230`, press travels 5px down onto a 0px base. 90ms. The 2px white strip on the top edge is what makes the yellow read as a physical face. Asserted.
-3. **The slitscan pointer is smoothed, not tracked.** Position lerps 0.12 per frame, lens strength 0.06. The lag is the effect. Do not make it follow the cursor.
+3. **The slitscan pointer is smoothed, not tracked.** Position lerps 0.12 per frame, lens strength 0.06. The lag is the effect. Do not make it follow the cursor. Every slit is also clamped inside the band, which is what stops the wave clipping flat against an edge when the pointer pushes it.
 4. **`timeline-scope: --deck` on the deck grid.** The dots live outside the scrolling rail, so the named timeline has to be scoped on the shared parent or the dots silently never move. Asserted.
 5. **Founder photos sit on Manila `#EAE5DA`.** They were composited on that ground so the two headshots read as one set. Not white, no white border. Asserted.
 6. **Client logo ghosts are scaled per logo** (168 / 210 / 150 / 160%). The four source files differ in aspect ratio by about 5x. Asserted that all four values are still distinct.
 7. **`html { line-height: normal }`.** The design was authored with no CSS reset. Tailwind's preflight sets `1.5`, which grew the spots chip by 2.3px and pushed the whole hero column down with it. Removing this line breaks hero alignment.
-8. **The CSS minifier is esbuild, not Lightning CSS.** Lightning CSS folds `animation-timeline: --deck` into the `animation` shorthand, which cannot carry a timeline name. The declaration becomes invalid and the deck dots stop animating: the same failure as a missing `timeline-scope`, reached from a different direction.
+8. **The CSS minifier is esbuild, not Lightning CSS.** Lightning CSS folds `animation-timeline: --deck` into the `animation` shorthand, which cannot carry a timeline name. The declaration becomes invalid and the deck dots stop animating: the same failure as a missing `timeline-scope`, reached from a different direction. A test now asserts the subway ticker's eight keyframe sets survive into the built CSS, because it is the same shape of bug waiting to happen.
+9. **The ticker's reduced-motion block repeats the `nth-child` selectors.** `.stop:nth-child(1)` is specificity (0,2,0) and a bare `.stop` is (0,1,0), so `@media (prefers-reduced-motion) { .stop { animation: none } }` loses and the ticker keeps running for exactly the people who asked it not to. The reference has that bug. This does not.
+10. **`--tx` defaults to 0 in CSS, and pointer-tilt only ever sets it on fine pointers.** That default is the whole touch and no-JavaScript story for the button depth: the straight-on shadow is the floor, not a broken state.
 
 Nothing on this page fades in on scroll. There are no scroll-reveal animations, no stagger, no parallax, and a test asserts that none appear.
 
@@ -106,7 +113,9 @@ Three, all decided rather than drifted into.
 | --- | --- |
 | **Nav button** renders `13px 30px` padding with charcoal text | The reference CSS declares exactly that but renders neither, because `.nav a` (specificity 0,1,1) beats `.navbtn` (0,1,0) and overrides padding and colour. The rendered result is an 83x33 button with grey `#6B675E` text. The handoff kit and the brief's motion table both describe the declared version. Confirmed with JD on 2026-09-10: the written spec wins. |
 | **Founder photos are AVIF/WebP** with a JPEG fallback | Required by the performance spec. A re-encode differs from the JPEG in every pixel, so the photos are masked in the pixel comparison and asserted separately: they load, they are the right size, they sit on Manila. |
-| **Phone tap targets** on footer links and founder social links are 44px | Required by the accessibility gate. Applied only below 768px, so the desktop layout keeps the reference's inline metrics exactly. |
+| **Phone tap targets** on footer links, founder social links and the "Currently building" links are 44px | Required by the accessibility gate. Applied only below 768px, so the desktop layout keeps the reference's inline metrics exactly. |
+| **The subway ticker actually stops under reduced motion** | The changelog says it should show all four lit and static. The reference CSS says so too, but a specificity mistake means it keeps animating. Fixed here, and it costs no fidelity: the baseline PNGs are captured without the preference set, so this state appears in no comparison. |
+| **Cal.com's bootstrap stub is theirs, verbatim** | The round 1 stub was a simplification, and their embed script threw partway through init on it. The plain href still navigated, so it looked fine while the modal silently never opened. |
 
 ---
 
@@ -149,27 +158,27 @@ Two harnesses, because they answer different questions.
 
 | Section | Differing pixels |
 | --- | --- |
-| 01 hero | 0.480% |
-| 02 breakdown | 0.389% |
-| 03 credibility | 0.182% |
-| 04 promise | 0.068% |
+| 01 hero | 0.498% |
+| 02 breakdown | 0.397% |
+| 03 credibility | 0.168% |
+| 04 promise | 0.015% |
 | 05 wordmark break | 0.000% |
-| 06 CTA + founders | 0.887% |
-| 08 mobile | 0.547% |
+| 06 CTA + founders | 0.411% |
+| 08 mobile | 0.563% |
 
 `npm run test:design` renders the reference HTML in the same browser and captures both sides identically, which removes the capture session as a variable:
 
 | Section | Differing pixels |
 | --- | --- |
-| 01 hero | 0.455% |
-| 02 breakdown | 0.270% |
-| 03 credibility | 0.084% |
-| 04 promise | 0.019% |
+| 01 hero | 0.468% |
+| 02 breakdown | 0.277% |
+| 03 credibility | 0.062% |
+| 04 promise | 0.006% |
 | 05 wordmark break | 0.000% |
-| 06 CTA + founders | 0.715% |
-| 08 mobile | 0.446% |
+| 06 CTA + founders | 0.370% |
+| 08 mobile | 0.452% |
 
-Every section is under 0.8% on the identical-capture comparison. Section 06 sits at 0.887% against the PNG because it is the last section on the page and cannot be captured on the same sub-pixel phase its standalone board had. Layout is asserted exactly and separately: a geometry probe compares fractional element positions against the reference and every element in the hero, credibility band and founders section matches to 0.000px.
+Every section is under 0.8% on both comparisons. R2 heights are asserted directly as well: hero 860, breakdown 1055, credibility 669, promise 828, wordmark break 387, and the CTA section measured through the footer at 1043, each to within 1px.
 
 ### Lighthouse
 
@@ -177,21 +186,29 @@ Median of three runs, against the production build.
 
 | | Performance | Accessibility | Best practices | SEO | LCP | CLS | TBT |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Desktop `/` | **100** | 97 | **100** | **100** | 385ms | 0.000 | 0ms |
+| Desktop `/` | **100** | 97 | **100** | **100** | 386ms | 0.000 | 0ms |
 | Desktop `/contact` | **100** | 94 | **100** | **100** | 327ms | 0.001 | 0ms |
-| Mobile `/` | **100** | 97 | **100** | **100** | 1363ms | 0.000 | 0ms |
+| Mobile `/` | **100** | 97 | **100** | **100** | 1361ms | 0.000 | 0ms |
 
 Budgets: LCP < 1500ms, CLS < 0.02, TBT < 100ms, INP proxy (max potential FID) < 120ms. All met.
 
-Total JavaScript shipped: **3.2 KB gzipped**. Page weight 107 KB desktop, 77 KB mobile.
+Total JavaScript shipped: **3.7 KB gzipped**. Page weight 87 KB desktop, 72 KB mobile.
 
 The slitscan loops start on `requestIdleCallback`. Running them from load put 190ms of script evaluation inside the measurement window; starting them on idle takes total blocking time to 0 and costs a few hundred milliseconds of an eight-second ambient wave.
 
 ### Tests
 
-51 Playwright tests, all passing: axe at four breakpoints on four pages, the full keyboard path with focus-ring assertions, tap targets, heading order, metadata and JSON-LD, the button press physics, the deck timeline wiring, reduced motion, no-JavaScript form and deck behaviour, horizontal-overflow checks at 1920 / 1440 / 1024 / 768 / 390, and the five dataLayer events with their payloads.
+65 Playwright tests, all passing: axe at four breakpoints on four pages, the full keyboard path with focus-ring assertions, tap targets, heading order, metadata and JSON-LD, the button press physics, the deck timeline wiring, reduced motion, no-JavaScript form and deck behaviour, horizontal-overflow checks at 1920 / 1440 / 1024 / 768 / 390, the five dataLayer events with their payloads, the subway ticker keyframes surviving minification, the pointer-tilt lerp and its touch fallback, every booking CTA resolving to cal.com, and a zero-tolerance em dash scan over the source, the rendered pages and the email bodies.
 
 ---
+
+## The writing rule
+
+**No em dashes. Anywhere.** Not in `site.ts`, not in a template, not in an email body, not in a comment, not in this file. Use a comma, a period or a colon.
+
+`tests/copy.spec.ts` fails the build if one appears, scanning the source files, the rendered pages and the email bodies. It also scans for the other tells: seamless, robust, leverage, unlock, elevate, and the rest. En dashes are allowed in numeric ranges, which is what "2-4 weeks" uses and is correct typography rather than a tell.
+
+This is mechanical on purpose. A rule that depends on somebody remembering it drifts back in.
 
 ## Environment variables
 
@@ -199,7 +216,7 @@ Build-time and public. They are compiled into the HTML, which is correct for bot
 
 | Variable | Default | Effect |
 | --- | --- | --- |
-| `PUBLIC_CAL_LINK` | empty | Cal.com slug or URL. Empty means every "Book" CTA falls back to `/contact`, which still works. |
+| `PUBLIC_CAL_LINK` | empty | Cal.com slug or URL. Currently `https://cal.com/jdworcester/discovery`, in `.env` locally. **It must also be set in the Cloudflare dashboard as a build variable**, because `.env` is not committed. A test fails the build if a booking CTA falls back to `/contact`. |
 | `PUBLIC_TURNSTILE_SITE_KEY` | empty | Empty means the widget is never loaded and the Worker applies its no-token controls. |
 
 **Secrets never live in this repo.** `TURNSTILE_SECRET_KEY` and `RESEND_API_KEY` go in with `wrangler secret put`. See `LAUNCH.md` section 2.

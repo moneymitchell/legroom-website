@@ -32,31 +32,46 @@ async function settle(page: Page) {
   await page.evaluate(async () => {
     const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+    // The founder rail is its own scroll container, and the second card sits a
+    // full card height down inside it, so it never comes near the viewport at
+    // rest and its lazy image never starts loading.
     const rail = document.querySelector<HTMLElement>(".rail");
     const railBehavior = rail?.style.scrollBehavior;
-    if (rail) rail.style.scrollBehavior = "auto";
-
-    const step = window.innerHeight;
-    for (let y = 0; y < document.body.scrollHeight; y += step) {
-      window.scrollTo(0, y);
-      await wait(30);
-    }
     if (rail) {
-      rail.scrollTop = rail.scrollHeight;
-      await wait(60);
+      rail.style.scrollBehavior = "auto";
+      for (const card of rail.querySelectorAll(".card")) {
+        card.scrollIntoView({ block: "nearest" });
+        await wait(220);
+      }
       rail.scrollTop = 0;
-      await wait(60);
+      await wait(120);
       rail.style.scrollBehavior = railBehavior ?? "";
+    }
+
+    for (let y = 0; y < document.body.scrollHeight; y += window.innerHeight) {
+      window.scrollTo(0, y);
+      await wait(40);
     }
     window.scrollTo(0, 0);
 
-    await Promise.all(
-      [...document.images].map((i) =>
-        i.complete
-          ? Promise.resolve()
-          : Promise.race([i.decode().catch(() => {}), wait(3000)]),
-      ),
-    );
+    // Poll rather than sleep a guessed amount: decode() on an image the
+    // browser has not chosen to fetch yet never settles, so it cannot be
+    // awaited directly.
+    const deadline = Date.now() + 5000;
+    for (;;) {
+      const pending = [...document.images].filter((i) => !i.complete || i.naturalWidth === 0);
+      if (pending.length === 0 || Date.now() > deadline) break;
+      await wait(100);
+    }
+
+    // scrollIntoView moves the sequential focus navigation starting point, so
+    // a following Tab would start from the founders section rather than the
+    // top of the document. Put it back on the body.
+    const body = document.body;
+    body.setAttribute("tabindex", "-1");
+    body.focus({ preventScroll: true });
+    body.blur();
+    body.removeAttribute("tabindex");
   });
 }
 
@@ -101,16 +116,27 @@ test.describe("layout", () => {
     // Frame sizes from HANDOFF.md. The CTA section is measured together with
     // the footer, which the reference board wrapped in the same frame.
     const expected: Record<string, number> = {
-      "header.hero": 836,
+      "header.hero": 860,
       "#breakdown": 1055,
-      "section.band": 498,
-      "[aria-labelledby='promise-title']": 796,
-      "section.brk": 468,
+      "section.band": 669,
+      "[aria-labelledby='promise-title']": 828,
+      "section.brk": 387,
     };
     for (const [sel, want] of Object.entries(expected)) {
       const h = await page.locator(sel).first().evaluate((e) => e.getBoundingClientRect().height);
       expect(Math.abs(h - want), `${sel} is ${h.toFixed(1)}, expected ~${want}`).toBeLessThanOrEqual(1);
     }
+    // The reference board for the last section wraps the CTA grid AND the
+    // footer in one frame, so it is measured the same way here.
+    const ctaThroughFooter = await page.evaluate(() => {
+      const a = document.querySelector("#who-we-are")!.getBoundingClientRect();
+      const f = document.querySelector("footer")!.getBoundingClientRect();
+      return f.bottom - a.top;
+    });
+    expect(
+      Math.abs(ctaThroughFooter - 1043),
+      `CTA through footer is ${ctaThroughFooter.toFixed(1)}, expected ~1043`,
+    ).toBeLessThanOrEqual(1);
   });
 });
 
@@ -122,8 +148,15 @@ test.describe("slitscan canvases", () => {
     const canvases = page.locator("canvas[data-slitscan]");
     await expect(canvases).toHaveCount(2);
 
-    for (const variant of ["light", "dark"]) {
-      const cv = page.locator(`canvas[data-slitscan="${variant}"]`);
+    // R2: one engine, two intensities. The hero strip is 0.85, the wordmark
+    // band 1.2, and nothing else distinguishes them.
+    const intensities = await canvases.evaluateAll((els) =>
+      els.map((e) => (e as HTMLElement).dataset.intensity),
+    );
+    expect(intensities).toEqual(["0.85", "1.2"]);
+
+    for (const variant of ["0.85", "1.2"]) {
+      const cv = page.locator(`canvas[data-intensity="${variant}"]`);
       await expect(cv).toHaveAttribute("aria-hidden", "true");
       const box = await cv.evaluate((el: HTMLCanvasElement) => ({
         cssW: el.getBoundingClientRect().width,
@@ -145,7 +178,7 @@ test.describe("slitscan canvases", () => {
     // the loop is paused while the canvas is off screen, which is the point
     await page.locator("section.brk").scrollIntoViewIfNeeded();
     await page.waitForTimeout(400);
-    const painted = await page.locator('canvas[data-slitscan="dark"]').evaluate(
+    const painted = await page.locator('canvas[data-intensity="1.2"]').evaluate(
       (el: HTMLCanvasElement) => {
         const ctx = el.getContext("2d");
         if (!ctx) return 0;
@@ -178,7 +211,7 @@ test.describe("slitscan canvases", () => {
     // a running 60fps loop would add ~40 frames in 700ms
     expect(second - first, "the slitscan loop is still running under reduced motion").toBeLessThan(8);
 
-    const painted = await page.locator('canvas[data-slitscan="dark"]').evaluate((el: HTMLCanvasElement) => {
+    const painted = await page.locator('canvas[data-intensity="1.2"]').evaluate((el: HTMLCanvasElement) => {
       const c = el.getContext("2d");
       if (!c) return 0;
       const { data } = c.getImageData(0, 0, el.width, Math.min(el.height, 200));
@@ -204,20 +237,34 @@ test.describe("button physics", () => {
         return { y: Math.round(m.m42), shadow: cs.boxShadow, bg: cs.backgroundColor };
       });
 
+    /**
+     * Wait for the 90ms transition to finish rather than sleeping a guessed
+     * amount. Reading mid-transition gives -1 instead of -2 and looks like a
+     * broken button when it is really just a fast one caught halfway.
+     */
+    const settled = async () => {
+      let last = await read();
+      for (let i = 0; i < 25; i++) {
+        await page.waitForTimeout(60);
+        const next = await read();
+        if (next.y === last.y && next.shadow === last.shadow) return next;
+        last = next;
+      }
+      return last;
+    };
+
     const rest = await read();
     expect(rest.y, "button should sit at 0 at rest").toBe(0);
     expect(rest.shadow, "rest base should be 5px charcoal").toContain("0px 5px 0px 0px");
 
     await btn.hover();
-    await page.waitForTimeout(180);
-    const hover = await read();
+    const hover = await settled();
     expect(hover.y, "button should lift 2px on hover").toBe(-2);
     expect(hover.shadow, "hover base should grow to 7px").toContain("0px 7px 0px 0px");
     expect(hover.bg, "face should brighten to #FFD230 on hover").toBe("rgb(255, 210, 48)");
 
     await page.mouse.down();
-    await page.waitForTimeout(180);
-    const active = await read();
+    const active = await settled();
     await page.mouse.up();
     expect(active.y, "button should travel the full 5px down on press").toBe(5);
     expect(active.shadow, "base should collapse to 0 on press").toContain("0px 0px 0px 0px");
@@ -341,7 +388,7 @@ test.describe("client logo ghosts", () => {
       els.map((e) => (e as HTMLElement).style.width),
     );
     // the four source files differ in aspect ratio by ~5x; one value ruins two
-    expect(widths).toEqual(["168%", "210%", "150%", "160%"]);
+    expect(widths).toEqual(["140%", "172%", "126%", "134%"]);
     expect(new Set(widths).size, "ghost scales were collapsed into one value").toBe(4);
   });
 });
@@ -359,5 +406,135 @@ test.describe("nothing animates on scroll", () => {
         .map((el) => el.className),
     );
     expect(animated, "the design has no scroll-reveal; something is animating").toEqual([]);
+  });
+});
+
+test.describe("the subway ticker", () => {
+  /**
+   * This is the minifier trap again. Lightning CSS once folded
+   * `animation-timeline: --deck` into the `animation` shorthand and silently
+   * killed the founder-deck dots. The ticker is eight keyframe sets driving
+   * two properties on the same elements, which is exactly the shape a minifier
+   * likes to collapse. So: assert the keyframes survive into the built CSS,
+   * with their percentages, and that the animations are actually attached.
+   */
+  test("all eight keyframe sets survive into the built CSS", async ({ page }) => {
+    await page.goto("/");
+    const css = await page.evaluate(() =>
+      [...document.querySelectorAll("style")].map((s) => s.textContent ?? "").join("\n"),
+    );
+    for (const name of ["bar1", "bar2", "bar3", "bar4", "lit1", "lit2", "lit3", "lit4"]) {
+      expect(css, `@keyframes ${name} is missing from the built CSS`).toContain(`${name}{`);
+    }
+    // the staggered starts are what make it a line rather than four blinks
+    for (const offset of ["12%", "24%", "36%"]) {
+      expect(css, `the ${offset} stagger offset was optimised away`).toContain(offset);
+    }
+  });
+
+  test("each stop is wired to its own pair of animations", async ({ page }) => {
+    await page.goto("/");
+    await page.locator("section.brk").scrollIntoViewIfNeeded();
+    const wiring = await page.evaluate(() => {
+      const stops = [...document.querySelectorAll(".stop")] as HTMLElement[];
+      return stops.map((s) => ({
+        text: (s.textContent ?? "").trim(),
+        name: getComputedStyle(s).animationName,
+        duration: getComputedStyle(s).animationDuration,
+        bar: getComputedStyle(s, "::after").animationName,
+        barTransform: getComputedStyle(s, "::after").transform,
+      }));
+    });
+    expect(wiring).toHaveLength(4);
+    expect(wiring.map((w) => w.name)).toEqual(["lit1", "lit2", "lit3", "lit4"]);
+    expect(wiring.map((w) => w.bar)).toEqual(["bar1", "bar2", "bar3", "bar4"]);
+    for (const w of wiring) {
+      expect(w.duration, `${w.text} is not on the 4.6s loop`).toBe("4.6s");
+      expect(w.barTransform, `${w.text} has no bar to wipe in`).not.toBe("none");
+    }
+  });
+
+  test("reduced motion shows all four lit and still", async ({ browser }) => {
+    const ctx = await browser.newContext({
+      reducedMotion: "reduce",
+      viewport: { width: 1440, height: 900 },
+    });
+    const page = await ctx.newPage();
+    await page.goto("/");
+    await page.locator("section.brk").scrollIntoViewIfNeeded();
+    const state = await page.evaluate(() => {
+      const stops = [...document.querySelectorAll(".stop")] as HTMLElement[];
+      return stops.map((s) => ({
+        name: getComputedStyle(s).animationName,
+        color: getComputedStyle(s).color,
+        barName: getComputedStyle(s, "::after").animationName,
+      }));
+    });
+    for (const s of state) {
+      expect(s.name, "the ticker is still animating under reduced motion").toBe("none");
+      expect(s.barName, "a bar is still animating under reduced motion").toBe("none");
+      // --ink, the lit colour
+      expect(s.color).toBe("rgb(35, 34, 31)");
+    }
+    await ctx.close();
+  });
+});
+
+test.describe("pointer-tracked button depth", () => {
+  test("--tx follows the cursor across a button and settles back", async ({ page }) => {
+    await page.goto("/");
+    const btn = page.locator(".btn-y").first();
+    const box = (await btn.boundingBox())!;
+
+    const readTx = () => btn.evaluate((el) => el.style.getPropertyValue("--tx"));
+
+    // left edge: --tx approaches -1
+    await page.mouse.move(box.x + 4, box.y + box.height / 2);
+    await page.waitForTimeout(450);
+    const left = Number(await readTx());
+    expect(left, "--tx should go negative near the left edge").toBeLessThan(-0.5);
+
+    // right edge: --tx approaches +1
+    await page.mouse.move(box.x + box.width - 4, box.y + box.height / 2);
+    await page.waitForTimeout(450);
+    const right = Number(await readTx());
+    expect(right, "--tx should go positive near the right edge").toBeGreaterThan(0.5);
+
+    // leaving returns it to 0, which is the straight-on shadow
+    await page.mouse.move(box.x + box.width / 2, box.y - 120);
+    await page.waitForTimeout(500);
+    expect(Number(await readTx()), "--tx should settle back to 0 on leave").toBeCloseTo(0, 1);
+  });
+
+  test("the shadow offset actually moves with it", async ({ page }) => {
+    await page.goto("/");
+    const btn = page.locator(".btn-y").first();
+    const box = (await btn.boundingBox())!;
+    const shadow = () => btn.evaluate((el) => getComputedStyle(el).boxShadow);
+
+    await page.mouse.move(box.x + 4, box.y + box.height / 2);
+    await page.waitForTimeout(450);
+    const atLeft = await shadow();
+    await page.mouse.move(box.x + box.width - 4, box.y + box.height / 2);
+    await page.waitForTimeout(450);
+    const atRight = await shadow();
+    expect(atLeft, "the hard shadow did not move with the pointer").not.toBe(atRight);
+  });
+
+  test("touch never runs it, and the fallback is the straight-on shadow", async ({ browser }) => {
+    const ctx = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      hasTouch: true,
+      isMobile: true,
+    });
+    const page = await ctx.newPage();
+    await page.goto("/");
+    const tx = await page.locator(".btn-y").first().evaluate((el) => ({
+      inline: el.style.getPropertyValue("--tx"),
+      computed: getComputedStyle(el).getPropertyValue("--tx"),
+    }));
+    expect(tx.inline, "pointer-tilt ran on a touch device").toBe("");
+    expect(tx.computed.trim(), "--tx should be unset, so the CSS default of 0 applies").toBe("");
+    await ctx.close();
   });
 });
