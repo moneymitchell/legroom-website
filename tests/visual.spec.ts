@@ -32,6 +32,19 @@ async function settle(page: Page) {
   await page.evaluate(async () => {
     const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+    /**
+     * html { scroll-behavior: smooth } has to come off for the duration.
+     * Every scroll below is programmatic, and with smooth on, each one is an
+     * animation that outlives the call that started it. The last scrollTo(0,
+     * 0) is then still in flight when settle() returns, so the caller gets a
+     * page that is quietly still moving: element boxes read at a position the
+     * page is only passing through, and anything hovered slides out from
+     * under the cursor mid-assertion. It is put back at the end.
+     */
+    const root = document.documentElement;
+    const rootBehavior = root.style.scrollBehavior;
+    root.style.scrollBehavior = "auto";
+
     // The founder rail is its own scroll container, and the second card sits a
     // full card height down inside it, so it never comes near the viewport at
     // rest and its lazy image never starts loading.
@@ -72,6 +85,10 @@ async function settle(page: Page) {
     body.focus({ preventScroll: true });
     body.blur();
     body.removeAttribute("tabindex");
+
+    // Land at the top for real, then hand smooth scrolling back.
+    window.scrollTo(0, 0);
+    root.style.scrollBehavior = rootBehavior;
   });
 }
 
@@ -140,22 +157,22 @@ test.describe("layout", () => {
   });
 });
 
-test.describe("slitscan canvases", () => {
-  test("both exist, are sized, and are hidden from assistive tech", async ({ page }) => {
+test.describe("the canvas bands", () => {
+  test("both canvases exist, are sized, and are hidden from assistive tech", async ({ page }) => {
     await page.goto("/");
     await settle(page);
 
-    const canvases = page.locator("canvas[data-slitscan]");
-    await expect(canvases).toHaveCount(2);
+    // R4: two canvases, two different engines. The wordmark keeps the
+    // slitscan; the hero band is the measure. One each.
+    await expect(page.locator("canvas[data-slitscan]")).toHaveCount(1);
+    await expect(page.locator("canvas[data-measure]")).toHaveCount(1);
 
-    // R2: one engine, two intensities. The hero strip is 0.85, the wordmark
-    // band 1.2, and nothing else distinguishes them.
-    const intensities = await canvases.evaluateAll((els) =>
-      els.map((e) => (e as HTMLElement).dataset.intensity),
-    );
-    expect(intensities).toEqual(["0.85", "1.2"]);
+    const intensities = await page
+      .locator("canvas")
+      .evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.intensity));
+    expect(intensities).toEqual(["1", "1.2"]);
 
-    for (const variant of ["0.85", "1.2"]) {
+    for (const variant of ["1", "1.2"]) {
       const cv = page.locator(`canvas[data-intensity="${variant}"]`);
       await expect(cv).toHaveAttribute("aria-hidden", "true");
       const box = await cv.evaluate((el: HTMLCanvasElement) => ({
@@ -188,7 +205,7 @@ test.describe("slitscan canvases", () => {
         return lit;
       },
     );
-    expect(painted, "the dark slitscan drew no pixels").toBeGreaterThan(0);
+    expect(painted, "the wordmark slitscan drew no pixels").toBeGreaterThan(0);
   });
 
   test("reduced motion draws one frame and stops the loop", async ({ browser }) => {
@@ -224,6 +241,132 @@ test.describe("slitscan canvases", () => {
   });
 });
 
+test.describe("the hero measure", () => {
+  /**
+   * R4 replaced the hero slitscan with a ruler that stretches under the
+   * pointer. Three things have to hold or it is not the component that was
+   * approved: it draws without a pointer, the pointer visibly opens space and
+   * lights it, and it is one static frame under reduced motion.
+   */
+  /**
+   * These tests do NOT call settle(). settle() walks the whole page and the
+   * founder rail to start lazy images, and between html { scroll-behavior:
+   * smooth } and scrollIntoView on a nested scroll container it hands back a
+   * page still travelling: the strip's box comes out at a negative y and every
+   * mouse.move lands outside the viewport, so the pointer never engages and
+   * the canvas shows a stale frame. The measure sits at the top of the hero
+   * and waits on no images. It needs none of that.
+   *
+   * What it does need is for the engine to have started, and the engines start
+   * on requestIdleCallback. So wait for ink, not for a guessed number of ms.
+   */
+  const ready = async (page: import("@playwright/test").Page) => {
+    await page.evaluate(() => document.fonts.ready.then(() => true));
+    await page.waitForFunction(() => {
+      const c = document.querySelector("canvas[data-measure]") as HTMLCanvasElement | null;
+      const ctx = c?.getContext("2d");
+      if (!c || !ctx) return false;
+      const { data } = ctx.getImageData(0, 0, c.width, c.height);
+      for (let i = 3; i < data.length; i += 4) if (data[i]! > 24) return true;
+      return false;
+    });
+  };
+
+  const sample = (page: import("@playwright/test").Page) =>
+    page.locator("canvas[data-measure]").evaluate((el: HTMLCanvasElement) => {
+      const ctx = el.getContext("2d");
+      if (!ctx) return { lit: 0, yellow: 0, spread: 0 };
+      const { data, width, height } = ctx.getImageData(0, 0, el.width, el.height);
+      let lit = 0;
+      let yellow = 0;
+      let minX = width;
+      let maxX = 0;
+      let topY = height;
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const i = (y * width + x) * 4;
+          if (data[i + 3]! < 24) continue;
+          lit++;
+          if (y < topY) topY = y;
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          // signal yellow is red-dominant with almost no blue
+          if (data[i]! > 190 && data[i + 2]! < 110) yellow++;
+        }
+      }
+      return { lit, yellow, spread: maxX - minX, topY };
+    });
+
+  test("draws a graduated rule with no pointer anywhere near it", async ({ page }) => {
+    await page.goto("/");
+    await ready(page);
+    const at = await sample(page);
+    expect(at.lit, "the measure drew nothing at rest").toBeGreaterThan(500);
+    // a rule, so it runs the full width of the band
+    const w = await page
+      .locator("canvas[data-measure]")
+      .evaluate((el: HTMLCanvasElement) => el.width);
+    expect(at.spread, "the rule does not span the band").toBeGreaterThan(w * 0.9);
+    expect(at.yellow, "there is signal yellow before the pointer arrives").toBe(0);
+  });
+
+  test("the pointer opens space, lights it, and dimensions it", async ({ page }) => {
+    await page.goto("/");
+    await ready(page);
+    const rest = await sample(page);
+
+    const box = (await page.locator(".scanstrip").boundingBox())!;
+    // One move is enough. The engine stores the target and lerps toward it on
+    // its own clock, so driving 70 moves across the wire only buys round
+    // trips. 0.06 per frame on strength is ~1s to come up; 1400ms is the
+    // margin. Two moves, because the first from (0,0) also has to cross into
+    // the band for the strength target to flip on.
+    await page.mouse.move(box.x + box.width / 2, box.y + 4);
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.waitForTimeout(1400);
+    const hot = await sample(page);
+
+    expect(hot.yellow, "the pointer lit nothing").toBeGreaterThan(300);
+    // the dimension bar sits above the tallest graduation, so the drawing
+    // reaches higher into the band than it does at rest
+    expect(hot.topY, "no dimension bar appeared above the graduations").toBeLessThan(rest.topY);
+    expect(hot.lit, "the pointer removed ink instead of adding it").toBeGreaterThan(rest.lit);
+  });
+
+  test("reduced motion draws one still rule and starts no loop", async ({ browser }) => {
+    const ctx = await browser.newContext({
+      reducedMotion: "reduce",
+      viewport: { width: 1440, height: 900 },
+    });
+    const page = await ctx.newPage();
+    await page.goto("/");
+    await ready(page);
+
+    const before = await sample(page);
+    expect(before.lit, "the still frame is empty").toBeGreaterThan(500);
+
+    // move the pointer across it: a stopped loop cannot repaint, so the frame
+    // has to be byte-identical afterwards
+    const box = (await page.locator(".scanstrip").boundingBox())!;
+    for (let i = 0; i < 6; i++) {
+      await page.mouse.move(box.x + box.width * (0.2 + i * 0.1), box.y + box.height / 2);
+    }
+    await page.waitForTimeout(600);
+    const after = await sample(page);
+    expect(after, "the measure is still animating under reduced motion").toEqual(before);
+    await ctx.close();
+  });
+
+  test("it is gone once the hero stacks", async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    await page.goto("/");
+    // The phone design has no band at all: the facts strip closes the hero.
+    await expect(page.locator(".scanstrip")).toBeHidden();
+    await ctx.close();
+  });
+});
+
 test.describe("button physics", () => {
   test("primary button lifts on hover and bottoms out on press", async ({ page }) => {
     await page.goto("/");
@@ -241,13 +384,20 @@ test.describe("button physics", () => {
      * Wait for the 90ms transition to finish rather than sleeping a guessed
      * amount. Reading mid-transition gives -1 instead of -2 and looks like a
      * broken button when it is really just a fast one caught halfway.
+     *
+     * `from` is the value the button is leaving, and it is the whole reason
+     * this is reliable. Two equal reads used to be enough to call it settled,
+     * but two reads taken before the hover has landed are also equal, and
+     * under parallel load that happens often enough to fail the run with a
+     * y of 0 on a button that works perfectly. Unchanged only counts once the
+     * value has actually moved.
      */
-    const settled = async () => {
+    const settled = async (from: number) => {
       let last = await read();
       for (let i = 0; i < 25; i++) {
         await page.waitForTimeout(60);
         const next = await read();
-        if (next.y === last.y && next.shadow === last.shadow) return next;
+        if (next.y !== from && next.y === last.y && next.shadow === last.shadow) return next;
         last = next;
       }
       return last;
@@ -258,13 +408,13 @@ test.describe("button physics", () => {
     expect(rest.shadow, "rest base should be 5px charcoal").toContain("0px 5px 0px 0px");
 
     await btn.hover();
-    const hover = await settled();
+    const hover = await settled(0);
     expect(hover.y, "button should lift 2px on hover").toBe(-2);
     expect(hover.shadow, "hover base should grow to 7px").toContain("0px 7px 0px 0px");
     expect(hover.bg, "face should brighten to #FFD230 on hover").toBe("rgb(255, 210, 48)");
 
     await page.mouse.down();
-    const active = await settled();
+    const active = await settled(-2);
     await page.mouse.up();
     expect(active.y, "button should travel the full 5px down on press").toBe(5);
     expect(active.shadow, "base should collapse to 0 on press").toContain("0px 0px 0px 0px");
