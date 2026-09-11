@@ -52,7 +52,7 @@ Every one came from `npm view <pkg> version` at build time, not from memory.
 | sharp | 0.35.4 | build-time only, for `npm run assets` |
 | pixelmatch / pngjs | 7.2.0 / 7.0.0 | visual regression only |
 
-No UI framework. No React. The interactive pieces are vanilla TypeScript and total **3.7 KB gzipped**.
+No UI framework. No React. The interactive pieces are vanilla TypeScript and total **4.9 KB gzipped**.
 
 ---
 
@@ -68,7 +68,8 @@ src/
   components/            one file per section, in page order
   components/ui/         Button, ArcadeButton, Chip, Highlight, Underline, Arrow, EmailCapture
   components/StickyRail.astro  the bottom bar, four stations on one CSS-only line
-  scripts/slitscan.ts    one canvas engine, scaled by a data-intensity attribute
+  scripts/slitscan.ts    the wordmark band's wave
+  scripts/measure-rule.ts  the hero band: a ruler that stretches under the pointer
   scripts/pointer-tilt.ts  pointer-tracked side depth on the buttons
   content/emails.ts      both transactional email bodies
   scripts/form.ts        progressive enhancement for both forms
@@ -93,15 +94,17 @@ Six of these were called out in the handoff. All six are honoured, and two more 
 
 1. **The sharpie highlight is an SVG behind the text.** Three overlapping paths, `mix-blend-mode: multiply`, rotated `-0.55deg`. The wrapper carries `z-index: 0` to open a stacking context; without it the `z-index: -1` child paints behind the section background and vanishes completely. Asserted in `tests/visual.spec.ts`.
 2. **Buttons travel the full 5px.** Rest on a 5px charcoal base, hover lifts 2px onto a 7px base and the face brightens to `#FFD230`, press travels 5px down onto a 0px base. 90ms. The 2px white strip on the top edge is what makes the yellow read as a physical face. Asserted.
-3. **The slitscan pointer is smoothed, not tracked.** Position lerps 0.12 per frame, lens strength 0.06. The lag is the effect. Do not make it follow the cursor. Every slit is also clamped inside the band, which is what stops the wave clipping flat against an edge when the pointer pushes it.
-4. **`timeline-scope: --deck` on the deck grid.** The dots live outside the scrolling rail, so the named timeline has to be scoped on the shared parent or the dots silently never move. Asserted.
-5. **Founder photos sit on Manila `#EAE5DA`.** They were composited on that ground so the two headshots read as one set. Not white, no white border. Asserted.
-6. **Client logo ghosts are scaled per logo** (168 / 210 / 150 / 160%). The four source files differ in aspect ratio by about 5x. Asserted that all four values are still distinct.
-7. **`html { line-height: normal }`.** The design was authored with no CSS reset. Tailwind's preflight sets `1.5`, which grew the spots chip by 2.3px and pushed the whole hero column down with it. Removing this line breaks hero alignment.
-8. **The CSS minifier is esbuild, not Lightning CSS.** Lightning CSS folds `animation-timeline: --deck` into the `animation` shorthand, which cannot carry a timeline name. The declaration becomes invalid and the deck dots stop animating: the same failure as a missing `timeline-scope`, reached from a different direction. A test now asserts the sticky rail's seven keyframe sets survive into the built CSS, because it is the same shape of bug waiting to happen.
-9. **The rail's reduced-motion block repeats the per-station class selectors.** `.station.s1` is specificity (0,2,0) and a bare `.station` is (0,1,0), so `@media (prefers-reduced-motion) { .station { animation: none } }` loses and the line keeps running for exactly the people who asked it not to. The reference ticker has that bug. This does not.
-10. **The rail's classes are `.railbar` / `.station` / `.stationdot`, never `.rail` / `.stop` / `.dot`.** All three of those already mean something else: `.rail` is the founder scroll deck, which the tests and `compare-design.mjs` both query from the document root, and `.dot` is the pinging yellow spots-open pip in `tokens.css`. Astro's scoping is not a namespace. It raises specificity on the properties a component declares, so an overridden `background` wins, but a global `box-shadow` and a global `::after` come through untouched, which is exactly how every station briefly ended up wearing a yellow halo on a 1.9s clock. Asserted.
-11. **`--tx` defaults to 0 in CSS, and pointer-tilt only ever sets it on fine pointers.** That default is the whole touch and no-JavaScript story for the button depth: the straight-on shadow is the floor, not a broken state.
+3. **Both canvas engines smooth the pointer rather than track it.** Position lerps 0.12 per frame, strength 0.06. The lag is the effect. Do not make either follow the cursor. In the slitscan every slit is also clamped inside the band, which is what stops the wave clipping flat against an edge when the pointer pushes it.
+4. **Neither engine reads the canvas rect inside its scroll handler.** It marks the cache dirty and recomputes on the next pointer move. Reading it on scroll is a sync layout read on every scroll frame, and worse, it lands before the scroll has settled: the cache ends up holding a position the canvas was only passing through, the band test in `onMove` then fails against a stale top, and the effect silently stops answering the pointer with nothing on screen to say why.
+5. **The measure stretches, it does not shove.** Each graduation is displaced by an odd function that is zero at the cursor and decays outward. What you see is not the displacement, it is the SLOPE: where the slope is positive, neighbouring graduations move apart, and that widening is the whole effect. Pushing them away by a bell curve instead leaves whichever graduation is nearest the cursor stranded alone in the middle of the gap it just opened.
+6. **`timeline-scope: --deck` on the deck grid.** The dots live outside the scrolling rail, so the named timeline has to be scoped on the shared parent or the dots silently never move. Asserted.
+7. **Founder photos sit on Manila `#EAE5DA`.** They were composited on that ground so the two headshots read as one set. Not white, no white border. Asserted.
+8. **Client logo ghosts are scaled per logo** (168 / 210 / 150 / 160%). The four source files differ in aspect ratio by about 5x. Asserted that all four values are still distinct.
+9. **`html { line-height: normal }`.** The design was authored with no CSS reset. Tailwind's preflight sets `1.5`, which grew the spots chip by 2.3px and pushed the whole hero column down with it. Removing this line breaks hero alignment.
+10. **The CSS minifier is esbuild, not Lightning CSS.** Lightning CSS folds `animation-timeline: --deck` into the `animation` shorthand, which cannot carry a timeline name. The declaration becomes invalid and the deck dots stop animating: the same failure as a missing `timeline-scope`, reached from a different direction. A test now asserts the sticky rail's seven keyframe sets survive into the built CSS, because it is the same shape of bug waiting to happen.
+11. **The rail's reduced-motion block repeats the per-station class selectors.** `.station.s1` is specificity (0,2,0) and a bare `.station` is (0,1,0), so `@media (prefers-reduced-motion) { .station { animation: none } }` loses and the line keeps running for exactly the people who asked it not to. The reference ticker has that bug. This does not.
+12. **The rail's classes are `.railbar` / `.station` / `.stationdot`, never `.rail` / `.stop` / `.dot`.** All three of those already mean something else: `.rail` is the founder scroll deck, which the tests and `compare-design.mjs` both query from the document root, and `.dot` is the pinging yellow spots-open pip in `tokens.css`. Astro's scoping is not a namespace. It raises specificity on the properties a component declares, so an overridden `background` wins, but a global `box-shadow` and a global `::after` come through untouched, which is exactly how every station briefly ended up wearing a yellow halo on a 1.9s clock. Asserted.
+13. **`--tx` defaults to 0 in CSS, and pointer-tilt only ever sets it on fine pointers.** That default is the whole touch and no-JavaScript story for the button depth: the straight-on shadow is the floor, not a broken state.
 
 Nothing on this page fades in on scroll. There are no scroll-reveal animations, no stagger, no parallax, and a test asserts that none appear.
 
@@ -117,6 +120,8 @@ Three, all decided rather than drifted into.
 | **Founder photos are AVIF/WebP** with a JPEG fallback | Required by the performance spec. A re-encode differs from the JPEG in every pixel, so the photos are masked in the pixel comparison and asserted separately: they load, they are the right size, they sit on Manila. |
 | **Phone tap targets** on footer links, founder social links and the "Currently building" links are 44px | Required by the accessibility gate. Applied only below 768px, so the desktop layout keeps the reference's inline metrics exactly. |
 | **The subway line actually stops under reduced motion** | The changelog says it should show all four lit and static. The reference CSS says so too, but a specificity mistake means it keeps animating. Fixed here, and it costs no fidelity: the baseline PNGs are captured without the preference set, so this state appears in no comparison. |
+| **R4: the hero band is a measure, not a second slitscan** | Requested on 2026-09-11. Two slitscan bands said the same thing twice, and the one under the hero carries the first interaction anyone has with the site. It is now a ruler that stretches under the pointer and dimensions the space it opens, in the same drafting language as the measured drawing above it. Both bands are masked in the comparison, so the swap costs no fidelity. |
+| **R4: the sticky rail's unlit stations sit below AA** | ~3.1:1, `--ink-3` on the bar's white, and the only contrast finding on the page that is ours rather than the reference's. Held at `--ink-2` in R3 to clear AA, but at that weight lit and unlit read as the same thing and the sequence, which is the only reason the bar exists, did not come across. The four phrases restate an argument the page already makes in full, every station reaches `--ink` within one 8s cycle, and reduced motion shows all four permanently lit. Audited in `tests/a11y.spec.ts` by element, not by colour pair: the bar is translucent, so the composited background changes with whatever is scrolled under it. |
 | **R3: the ticker is a bottom bar, not a row above the wordmark** | Requested on 2026-09-11. Same four beats, rewritten, running as one line that travels between them rather than four labels blinking in place. The bar is `position: fixed`, so both comparators hide it before capture: it belongs to no section and would otherwise land inside every clip. |
 | **R3: three frames carry a written pixel allowance** | The boards are the approved design and they hold R2 copy. R3 replaced the copy in breakdown, CTA + founders and mobile, so those three differ from their board by glyphs. Re-shooting the boards would destroy the only independent record of what was approved, so each carries an allowance sized just above its measured diff, with the reason and the previous number printed in the table. Geometry is not relaxed: Δh and alignment still report straight. |
 | **Cal.com's bootstrap stub is theirs, verbatim** | The round 1 stub was a simplification, and their embed script threw partway through init on it. The plain href still navigated, so it looked fine while the modal silently never opened. |
@@ -164,10 +169,10 @@ Two harnesses, because they answer different questions.
 | --- | --- | --- | --- |
 | 01 hero | 0.498% | 0.564% | 0.8% |
 | 02 breakdown | 0.397% | 0.825% | 1.1% |
-| 03 credibility | 0.168% | 0.168% | 0.8% |
+| 03 credibility | 0.168% | 0.393% | 0.8% |
 | 04 promise | 0.015% | 0.015% | 0.8% |
 | 05 wordmark break | 0.000% | 0.000% | 0.8% |
-| 06 CTA + founders | 0.411% | 4.299% | 4.8% |
+| 06 CTA + founders | 0.411% | 4.873% | 5.2% |
 | 08 mobile | 0.563% | 10.759% | 11.5% |
 
 `npm run test:design` renders the reference HTML in the same browser and captures both sides identically, which removes the capture session as a variable:
@@ -176,13 +181,15 @@ Two harnesses, because they answer different questions.
 | --- | --- | --- |
 | 01 hero | 0.468% | 0.539% |
 | 02 breakdown | 0.277% | 0.678% |
-| 03 credibility | 0.062% | 0.062% |
+| 03 credibility | 0.062% | 0.281% |
 | 04 promise | 0.006% | 0.006% |
 | 05 wordmark break | 0.000% | 0.000% |
-| 06 CTA + founders | 0.370% | 4.192% |
+| 06 CTA + founders | 0.370% | 4.768% |
 | 08 mobile | 0.452% | 10.668% |
 
-Every R3 number is copy, not layout. The boards hold R2 words and R3 replaced them, so the three frames that grew carry the written allowances above. Geometry is unchanged and is asserted directly as well: hero 860, breakdown 1055, credibility 669, promise 828, wordmark break 387, and the CTA section measured through the footer at 1043, each to within 1px. Wordmark break reads 0.000% on both harnesses because the slitscan canvas covers the whole section and is masked; the yellow swipe realignment underneath it is asserted in tests, not in pixels.
+Every number in the R3/R4 columns is copy, not layout. The boards hold R2 words and those rounds replaced them, so the three frames that grew carry the written allowances above. Geometry is unchanged and is asserted directly as well: hero 860, breakdown 1055, credibility 669, promise 828, wordmark break 387, and the CTA section measured through the footer at 1043, each to within 1px.
+
+Two of those are worth naming. Credibility held 669 through R4 only because `.cg` carries an explicit `min-height`: cutting a clause off the body copy took two lines out of the left column and collapsed the whole band by 55px. The frame is the approved one, so it is pinned rather than left to whatever the longest column happens to be. And wordmark break reads 0.000% on both harnesses because its canvas covers the whole section and is masked, so the swipe realignment underneath it is asserted in tests, not in pixels. The hero band is masked for the same reason, which is what let R4 swap one engine for another without moving the number.
 
 ### Lighthouse
 
@@ -196,13 +203,13 @@ Median of three runs, against the production build.
 
 Budgets: LCP < 1500ms, CLS < 0.02, TBT < 100ms, INP proxy (max potential FID) < 120ms. All met.
 
-Total JavaScript shipped: **3.7 KB gzipped**. Page weight 87 KB desktop, 72 KB mobile.
+Total JavaScript shipped: **4.9 KB gzipped**. Page weight 87 KB desktop, 72 KB mobile.
 
-The slitscan loops start on `requestIdleCallback`. Running them from load put 190ms of script evaluation inside the measurement window; starting them on idle takes total blocking time to 0 and costs a few hundred milliseconds of an eight-second ambient wave.
+Both canvas loops start on `requestIdleCallback`. Running them from load put 190ms of script evaluation inside the measurement window; starting them on idle takes total blocking time to 0 and costs a few hundred milliseconds of ambient texture nobody is waiting for.
 
 ### Tests
 
-71 Playwright tests, all passing: axe at four breakpoints on four pages, the full keyboard path with focus-ring assertions, tap targets, heading order, metadata and JSON-LD, the button press physics, the deck timeline wiring, reduced motion, no-JavaScript form and deck behaviour, horizontal-overflow checks at 1920 / 1440 / 1024 / 768 / 390, the five dataLayer events with their payloads, the sticky rail's seven keyframe sets surviving minification and its stations lighting in sequence, the pointer-tilt lerp and its touch fallback, every booking CTA resolving to cal.com, the sticky rail staying out of the page's hit tests, and a zero-tolerance em dash scan over the source, the rendered pages and the email bodies.
+75 Playwright tests, all passing: axe at four breakpoints on four pages, the full keyboard path with focus-ring assertions, tap targets, heading order, metadata and JSON-LD, the button press physics, the deck timeline wiring, reduced motion, no-JavaScript form and deck behaviour, horizontal-overflow checks at 1920 / 1440 / 1024 / 768 / 390, the five dataLayer events with their payloads, the sticky rail's seven keyframe sets surviving minification and its stations lighting in sequence, the hero measure drawing without a pointer and opening and dimensioning space with one, the pointer-tilt lerp and its touch fallback, every booking CTA resolving to cal.com, the sticky rail staying out of the page's hit tests, and a zero-tolerance em dash scan over the source, the rendered pages and the email bodies.
 
 ---
 
