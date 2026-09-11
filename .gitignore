@@ -11,8 +11,7 @@ dist
 # test + audit output
 test-results
 playwright-report
-tests/__screenshots__/*-actual.png
-tests/__screenshots__/*-diff.png
+tests/__screenshots__/
 .lighthouseci
 .lighthouseci-mobile
 
