@@ -32,8 +32,21 @@ import { bookHref, contactHref } from "@/lib/links";
   import { initCal, tagCalLinks } from "@/scripts/cal";
   import { calSlug } from "@/lib/links";
 
-  initSlitscans();
+  // Wiring first: it is cheap, and the CTAs and forms have to be live the
+  // moment the page is.
   initForms(import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "");
   tagCalLinks(calSlug);
   initCal(calSlug);
+
+  // The slitscan loops are ambient texture, not content, and they are the only
+  // continuous work on the page. Starting them once the main thread is idle
+  // keeps them out of the interaction window: it costs a few hundred
+  // milliseconds of an eight-second wave nobody is waiting for, and it is the
+  // difference between 190ms and near-zero total blocking time.
+  const start = () => initSlitscans();
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(start, { timeout: 1500 });
+  } else {
+    setTimeout(start, 200);
+  }
 </script>

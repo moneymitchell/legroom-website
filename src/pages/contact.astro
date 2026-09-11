@@ -188,8 +188,15 @@ const cap = site.breakdown.capture;
     margin-top: 28px;
     color: var(--ink-2);
   }
+  /* an inline link inside a sentence needs more than colour to be findable */
   .alt a {
     color: var(--ink);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1.5px;
+  }
+  .alt a:hover {
+    text-decoration-thickness: 2.5px;
   }
   @media (max-width: 767px) {
     .form :global(.submit) {

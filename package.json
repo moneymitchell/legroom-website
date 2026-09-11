@@ -12,13 +12,15 @@
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p worker/tsconfig.json",
     "test:visual": "playwright test tests/visual.spec.ts",
     "test:a11y": "playwright test tests/a11y.spec.ts",
-    "lh": "lhci autorun",
+    "lh": "lhci autorun --config=lighthouserc.json",
     "assets": "node scripts/build-assets.mjs",
     "deploy": "astro build && wrangler deploy",
     "cf:dev": "astro build && wrangler dev",
     "db:migrate": "wrangler d1 migrations apply legroom-leads --remote",
     "test:pixels": "node scripts/compare-reference.mjs",
-    "test:design": "node scripts/compare-design.mjs"
+    "test:design": "node scripts/compare-design.mjs",
+    "lh:mobile": "lhci autorun --config=lighthouserc.mobile.json",
+    "lh:report": "node scripts/lh-summary.mjs"
   },
   "keywords": [],
   "author": "",
