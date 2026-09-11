@@ -309,6 +309,24 @@ const fig = hero.figure;
     height: 100%;
     display: block;
     pointer-events: none;
+    /* The slits are hard-edged rectangles of uniform length, so without this
+       the band terminates in a straight line top and bottom and reads as a
+       strip that got trimmed rather than a wave. The mask dissolves both
+       edges into the paper. Costs nothing per frame. */
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      #000 16%,
+      #000 84%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      #000 16%,
+      #000 84%,
+      transparent 100%
+    );
   }
   .scanstrip .fade {
     position: absolute;

@@ -78,8 +78,8 @@ export function mountSlitscan(canvas: HTMLCanvasElement): () => void {
     canvas.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     // scale the wave to the band so one engine serves both heights
-    baseAmp = Math.max(11, H * 0.115);
-    baseLen = Math.max(26, H * 0.26);
+    baseAmp = Math.max(11, H * 0.145);
+    baseLen = Math.max(24, H * 0.2);
   };
 
   const onMove = (e: MouseEvent) => {
@@ -118,7 +118,10 @@ export function mountSlitscan(canvas: HTMLCanvasElement): () => void {
       const g = Math.exp(-d * d) * mk;
 
       const amp = baseAmp * (1 + g * 1.75);
-      const len = baseLen * (1 + Math.abs(w) * 0.5 + g * 1.15);
+      // R3: 1.05 rather than 0.5. At 0.5 every slit was within a few pixels
+      // of the same length, so the band had a uniform thickness and read as a
+      // ribbon with two hard edges. The wider spread is what makes it a wave.
+      const len = baseLen * (1 + Math.abs(w) * 1.05 + g * 1.15);
       const heat = Math.min(1, Math.abs(w) * 0.42 + g * 0.92);
 
       // keep every slit inside the band: no vertical clipping, ever
