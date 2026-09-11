@@ -409,74 +409,170 @@ test.describe("nothing animates on scroll", () => {
   });
 });
 
-test.describe("the subway ticker", () => {
+test.describe("the sticky rail", () => {
   /**
+   * R3 replaced the static ticker above the wordmark with a bar fixed to the
+   * bottom of the viewport, running as a subway line: four stations, a yellow
+   * line that travels between them, each station lighting as the line arrives.
+   *
    * This is the minifier trap again. Lightning CSS once folded
    * `animation-timeline: --deck` into the `animation` shorthand and silently
-   * killed the founder-deck dots. The ticker is eight keyframe sets driving
-   * two properties on the same elements, which is exactly the shape a minifier
-   * likes to collapse. So: assert the keyframes survive into the built CSS,
-   * with their percentages, and that the animations are actually attached.
+   * killed the founder-deck dots. Seven keyframe sets driving colour on one
+   * element and a transform on another element's ::after is exactly the shape
+   * a minifier likes to collapse, so: assert the keyframes survive into the
+   * built CSS with their percentages, and that they are actually attached.
    */
-  test("all eight keyframe sets survive into the built CSS", async ({ page }) => {
+  test("all seven keyframe sets survive into the built CSS", async ({ page }) => {
     await page.goto("/");
     const css = await page.evaluate(() =>
       [...document.querySelectorAll("style")].map((s) => s.textContent ?? "").join("\n"),
     );
-    for (const name of ["bar1", "bar2", "bar3", "bar4", "lit1", "lit2", "lit3", "lit4"]) {
+    for (const name of ["lit1", "lit2", "lit3", "lit4", "run1", "run2", "run3"]) {
       expect(css, `@keyframes ${name} is missing from the built CSS`).toContain(`${name}{`);
     }
-    // the staggered starts are what make it a line rather than four blinks
-    for (const offset of ["12%", "24%", "36%"]) {
-      expect(css, `the ${offset} stagger offset was optimised away`).toContain(offset);
+    // The arrival times. Each station lights at the beat the segment before it
+    // finishes filling, which is the whole reason it reads as one line moving
+    // rather than four things switching on.
+    for (const offset of ["8%", "30%", "52%", "74%"]) {
+      expect(css, `the ${offset} arrival beat was optimised away`).toContain(offset);
     }
   });
 
-  test("each stop is wired to its own pair of animations", async ({ page }) => {
+  test("each station lights in sequence and each segment runs between them", async ({ page }) => {
     await page.goto("/");
-    await page.locator("section.brk").scrollIntoViewIfNeeded();
     const wiring = await page.evaluate(() => {
-      const stops = [...document.querySelectorAll(".stop")] as HTMLElement[];
-      return stops.map((s) => ({
-        text: (s.textContent ?? "").trim(),
-        name: getComputedStyle(s).animationName,
-        duration: getComputedStyle(s).animationDuration,
-        bar: getComputedStyle(s, "::after").animationName,
-        barTransform: getComputedStyle(s, "::after").transform,
-      }));
+      const stations = [...document.querySelectorAll(".railbar .station")] as HTMLElement[];
+      const segs = [...document.querySelectorAll(".railbar .seg")] as HTMLElement[];
+      return {
+        stations: stations.map((el) => ({
+          text: (el.textContent ?? "").trim(),
+          name: getComputedStyle(el).animationName,
+          duration: getComputedStyle(el).animationDuration,
+          dot: getComputedStyle(el.querySelector("i") as Element).backgroundColor,
+          color: getComputedStyle(el).color,
+        })),
+        segs: segs.map((el) => ({
+          name: getComputedStyle(el, "::after").animationName,
+          duration: getComputedStyle(el, "::after").animationDuration,
+        })),
+      };
     });
-    expect(wiring).toHaveLength(4);
-    expect(wiring.map((w) => w.name)).toEqual(["lit1", "lit2", "lit3", "lit4"]);
-    expect(wiring.map((w) => w.bar)).toEqual(["bar1", "bar2", "bar3", "bar4"]);
-    for (const w of wiring) {
-      expect(w.duration, `${w.text} is not on the 4.6s loop`).toBe("4.6s");
-      expect(w.barTransform, `${w.text} has no bar to wipe in`).not.toBe("none");
+
+    expect(wiring.stations).toHaveLength(4);
+    expect(wiring.stations.map((s) => s.name)).toEqual(["lit1", "lit2", "lit3", "lit4"]);
+    // Three segments for four stations. A fourth would close the loop into a
+    // circle, and the sequence is an argument with an end, not a cycle.
+    expect(wiring.segs).toHaveLength(3);
+    expect(wiring.segs.map((s) => s.name)).toEqual(["run1", "run2", "run3"]);
+
+    for (const s of [...wiring.stations, ...wiring.segs]) {
+      expect(s.duration, "not on the shared 8s loop").toBe("8s");
+    }
+    // `background: currentColor` on the dot is what keeps the dot and its
+    // label on one animation instead of two that can drift apart.
+    for (const s of wiring.stations) {
+      expect(s.dot, `${s.text}: the dot is not following its label's colour`).toBe(s.color);
     }
   });
 
-  test("reduced motion shows all four lit and still", async ({ browser }) => {
+  test("the labels are the four steps of the argument, in order", async ({ page }) => {
+    await page.goto("/");
+    const labels = await page
+      .locator(".railbar .station span")
+      .evaluateAll((els) => els.map((e) => (e.textContent ?? "").trim()));
+    expect(labels).toEqual([
+      "Try Legroom",
+      "Measure the results",
+      "Less time more money",
+      "Reinvest and grow",
+    ]);
+  });
+
+  test("it is pinned flush to the bottom, full width, at the asked-for opacity", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const box = await page.evaluate(() => {
+      const el = document.querySelector(".railbar") as HTMLElement;
+      const r = el.getBoundingClientRect();
+      const cs = getComputedStyle(el);
+      return {
+        position: cs.position,
+        left: r.left,
+        width: r.width,
+        vw: window.innerWidth,
+        bottomGap: window.innerHeight - r.bottom,
+        bg: cs.backgroundColor,
+        bodyPad: getComputedStyle(document.body).paddingBottom,
+        height: r.height,
+      };
+    });
+    expect(box.position).toBe("fixed");
+    expect(box.left).toBe(0);
+    expect(box.width).toBe(box.vw);
+    expect(box.bottomGap, "the bar is not flush with the bottom edge").toBe(0);
+
+    // The brief asked for 70 to 90 percent. Chromium reports the backdrop-filter
+    // branch here, so this is the 0.78 white.
+    const alpha = Number.parseFloat(box.bg.match(/rgba?\([^)]*?([\d.]+)\)$/)?.[1] ?? "1");
+    expect(alpha, `background is ${box.bg}, outside the 0.7 to 0.9 the brief set`)
+      .toBeGreaterThanOrEqual(0.7);
+    expect(alpha).toBeLessThanOrEqual(0.9);
+
+    // The page has to give back what the fixed bar takes, or the last rows of
+    // the footer can never be scrolled out from under it.
+    expect(Number.parseFloat(box.bodyPad), "the footer can never clear the bar").toBeGreaterThanOrEqual(
+      box.height,
+    );
+  });
+
+  test("reduced motion shows the whole line lit and still", async ({ browser }) => {
     const ctx = await browser.newContext({
       reducedMotion: "reduce",
       viewport: { width: 1440, height: 900 },
     });
     const page = await ctx.newPage();
     await page.goto("/");
-    await page.locator("section.brk").scrollIntoViewIfNeeded();
     const state = await page.evaluate(() => {
-      const stops = [...document.querySelectorAll(".stop")] as HTMLElement[];
-      return stops.map((s) => ({
-        name: getComputedStyle(s).animationName,
-        color: getComputedStyle(s).color,
-        barName: getComputedStyle(s, "::after").animationName,
-      }));
+      const stations = [...document.querySelectorAll(".railbar .station")] as HTMLElement[];
+      const segs = [...document.querySelectorAll(".railbar .seg")] as HTMLElement[];
+      return {
+        stations: stations.map((el) => ({
+          name: getComputedStyle(el).animationName,
+          color: getComputedStyle(el).color,
+        })),
+        segs: segs.map((el) => ({
+          name: getComputedStyle(el, "::after").animationName,
+          transform: getComputedStyle(el, "::after").transform,
+        })),
+      };
     });
-    for (const s of state) {
-      expect(s.name, "the ticker is still animating under reduced motion").toBe("none");
-      expect(s.barName, "a bar is still animating under reduced motion").toBe("none");
-      // --ink, the lit colour
-      expect(s.color).toBe("rgb(35, 34, 31)");
+    for (const s of state.stations) {
+      expect(s.name, "a station is still animating under reduced motion").toBe("none");
+      expect(s.color, "a station is not showing its lit colour").toBe("rgb(35, 34, 31)"); // --ink
+    }
+    for (const g of state.segs) {
+      expect(g.name, "a segment is still animating under reduced motion").toBe("none");
+      // scaleX(1): the line arrived and stayed. matrix(1, 0, 0, 1, 0, 0).
+      expect(g.transform, "a segment is not held at its filled state").toBe("matrix(1, 0, 0, 1, 0, 0)");
     }
     await ctx.close();
+  });
+
+  test("it is gone below 768 and present at 768", async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await ctx.newPage();
+    await page.goto("/");
+    // A phone cannot fit four labels legibly and cannot spare the viewport.
+    await expect(page.locator(".railbar")).toBeHidden();
+    await page.setViewportSize({ width: 768, height: 900 });
+    await expect(page.locator(".railbar")).toBeVisible();
+    await ctx.close();
+  });
+
+  test("the old ticker is gone from the wordmark section", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("section.brk .stop")).toHaveCount(0);
   });
 });
 

@@ -1,0 +1,314 @@
+---
+import { site } from "@/content/site";
+
+/**
+ * The sticky rail: a subway line pinned to the bottom of the viewport.
+ *
+ * This used to sit above the wordmark as a row of static labels that blinked.
+ * It now runs as an actual line: four stations, a yellow line that runs from
+ * one to the next, and each station lighting as the line reaches it. All four
+ * stay lit, then the whole line resets and runs again.
+ *
+ * The order is the argument, not decoration. Try it, measure it, bank the
+ * saving, put it back to work. Someone who reads the bar once has read the
+ * whole offer.
+ *
+ * ---- HOW IT IS BUILT ----
+ * Seven keyframe sets, no JavaScript. Four `lit1..lit4` animate each station's
+ * colour, and three `run1..run3` scale the connecting segments from 0 to 1.
+ * The dots take `background: currentColor`, so one animation per station drives
+ * both the dot and its label. The yellow belongs to the line, not the station,
+ * which is what makes it read as something travelling rather than four things
+ * switching on.
+ *
+ * The timings are the effect. Each station lights just as the segment before it
+ * finishes filling, so the line never appears to arrive late. Everything holds
+ * from 74% to 88%, which is the beat where the whole line is lit and readable,
+ * then it all drops together at 89%.
+ *
+ * Hidden below 768px. Four labels need about 500px of horizontal room at a
+ * legible size, and a fixed bar costs a phone more of its viewport than the
+ * copy earns back there.
+ *
+ * NAMING: `.railbar` and `.station`, not `.rail` and `.stop`. `.rail` is
+ * already the founder-card scroll deck in Founders.astro and both the tests
+ * and scripts/compare-design.mjs query it by that name from the document root.
+ * Astro scopes the CSS either way; the collision would only bite in JS.
+ */
+const { rail } = site;
+---
+
+<aside class="railbar" aria-label={rail.label}>
+  <div class="wrap">
+    <ol class="line">
+      {
+        rail.stops.map((stop, i) => (
+          <>
+            {i > 0 && <li class={`seg g${i}`} aria-hidden="true" />}
+            <li class={`station s${i + 1}`}>
+              <i class="dot" aria-hidden="true" />
+              <span>{stop}</span>
+            </li>
+          </>
+        ))
+      }
+    </ol>
+  </div>
+</aside>
+
+<style>
+  .railbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    /* 85%, inside the 70 to 90 the brief asked for. Enough to lift the bar off
+       the paper without turning the page white at the bottom edge. */
+    background: rgba(255, 255, 255, 0.85);
+    border-top: 1px solid var(--rule);
+    box-shadow: 0 -6px 18px rgba(28, 28, 26, 0.06);
+  }
+  /* Only where it is supported. Without it the 85% white still reads correctly,
+     it just does not soften what scrolls underneath. */
+  @supports (backdrop-filter: blur(10px)) or (-webkit-backdrop-filter: blur(10px)) {
+    .railbar {
+      background: rgba(255, 255, 255, 0.78);
+      -webkit-backdrop-filter: blur(10px) saturate(1.15);
+      backdrop-filter: blur(10px) saturate(1.15);
+    }
+  }
+
+  .line {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    height: 56px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* --- stations ----------------------------------------------------------- */
+  .station {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    flex: none;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 11.5px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    /* Unlit is --ink-2, not the --ink-3 the rest of the site dims labels with.
+       --ink-3 on this bar's white measures 2.5:1 and fails AA. The audited
+       --ink-3 findings elsewhere are inherited brand values the brief says to
+       report rather than change; this bar is new in R3, so it clears 4.5:1.
+       The light-up still reads: #6b675e to #23221f, with the yellow line
+       arriving at the dot doing most of the work. */
+    color: var(--ink-2);
+  }
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex: none;
+    /* one animation per station drives the label and the dot together */
+    background: currentColor;
+  }
+
+  /* --- the line between them ---------------------------------------------- */
+  .seg {
+    flex: 1 1 auto;
+    min-width: 22px;
+    height: 2px;
+    margin: 0 14px;
+    position: relative;
+    background: var(--rule);
+  }
+  .seg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--yellow);
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+
+  .s1 {
+    animation: lit1 8s linear infinite;
+  }
+  .s2 {
+    animation: lit2 8s linear infinite;
+  }
+  .s3 {
+    animation: lit3 8s linear infinite;
+  }
+  .s4 {
+    animation: lit4 8s linear infinite;
+  }
+  .g1::after {
+    animation: run1 8s linear infinite;
+  }
+  .g2::after {
+    animation: run2 8s linear infinite;
+  }
+  .g3::after {
+    animation: run3 8s linear infinite;
+  }
+
+  /* stations light as the segment before them finishes */
+  @keyframes lit1 {
+    0%,
+    4% {
+      color: #6b675e;
+    }
+    8%,
+    88% {
+      color: #23221f;
+    }
+    89%,
+    100% {
+      color: #6b675e;
+    }
+  }
+  @keyframes lit2 {
+    0%,
+    26% {
+      color: #6b675e;
+    }
+    30%,
+    88% {
+      color: #23221f;
+    }
+    89%,
+    100% {
+      color: #6b675e;
+    }
+  }
+  @keyframes lit3 {
+    0%,
+    48% {
+      color: #6b675e;
+    }
+    52%,
+    88% {
+      color: #23221f;
+    }
+    89%,
+    100% {
+      color: #6b675e;
+    }
+  }
+  @keyframes lit4 {
+    0%,
+    70% {
+      color: #6b675e;
+    }
+    74%,
+    88% {
+      color: #23221f;
+    }
+    89%,
+    100% {
+      color: #6b675e;
+    }
+  }
+
+  /* the line running from one station to the next */
+  @keyframes run1 {
+    0%,
+    8% {
+      transform: scaleX(0);
+    }
+    30%,
+    88% {
+      transform: scaleX(1);
+    }
+    89%,
+    100% {
+      transform: scaleX(0);
+    }
+  }
+  @keyframes run2 {
+    0%,
+    30% {
+      transform: scaleX(0);
+    }
+    52%,
+    88% {
+      transform: scaleX(1);
+    }
+    89%,
+    100% {
+      transform: scaleX(0);
+    }
+  }
+  @keyframes run3 {
+    0%,
+    52% {
+      transform: scaleX(0);
+    }
+    74%,
+    88% {
+      transform: scaleX(1);
+    }
+    89%,
+    100% {
+      transform: scaleX(0);
+    }
+  }
+
+  /* The end state of the loop, held still. The selectors have to match the
+     class specificity above, or the animations keep running for exactly the
+     people who asked them not to. */
+  @media (prefers-reduced-motion: reduce) {
+    .s1,
+    .s2,
+    .s3,
+    .s4,
+    .g1::after,
+    .g2::after,
+    .g3::after {
+      animation: none;
+    }
+    .station {
+      color: var(--ink);
+    }
+    .seg::after {
+      transform: scaleX(1);
+    }
+  }
+
+  /* --- narrow screens ------------------------------------------------------ */
+  @media (max-width: 1100px) {
+    .station {
+      font-size: 10.5px;
+      letter-spacing: 0.14em;
+      gap: 7px;
+    }
+    .seg {
+      margin: 0 10px;
+      min-width: 14px;
+    }
+  }
+  @media (max-width: 767px) {
+    .railbar {
+      display: none;
+    }
+  }
+</style>
+
+<style is:global>
+  /* The bar is fixed, so without this it sits permanently on top of the last
+     57px of the page (its 56px line plus the 1px top rule) and the footer's
+     bottom row can never be scrolled clear of it. Global because the element
+     that has to move is not in this component, and scoped to the widths where
+     the bar actually renders. */
+  @media (min-width: 768px) {
+    body {
+      padding-bottom: 57px;
+    }
+  }
+</style>

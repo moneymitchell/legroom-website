@@ -4,24 +4,17 @@ import { site } from "@/content/site";
 /**
  * The wordmark break. 387px at 1440.
  *
- * R2 turned this section inside out. It was full-bleed charcoal with a bone
- * lockup and a tagline; it is now Manila with a charcoal lockup, the light
- * slitscan running behind it at intensity 1.2, and no tagline at all. The
- * brand no longer shouts here, it just signs the page.
+ * Manila, charcoal lockup, the slitscan running behind it. The brand does not
+ * shout here, it signs the page.
  *
- * ---- THE SUBWAY LINE ----
- * The four stops light left to right in sequence, each with a yellow bar
- * wiping in beneath it. All four stay lit, then the whole line resets and runs
- * again on a 4.6s loop. Eight keyframe sets, pure CSS, no JavaScript.
+ * R3 moved the ticker out of this section and onto the sticky rail at the
+ * bottom of the viewport, where it can run as an actual line rather than four
+ * labels blinking above a logo. What is left is the signature.
  *
- * The keyframe percentages are the effect. bar2 starts at 12%, bar3 at 24%,
- * bar4 at 36%: that 12% offset is what makes it read as one line being walked
- * rather than four things blinking. Every bar holds until 87%, which is the
- * pause where all four sit lit, and they all drop together at 87.5%. Change
- * any of those numbers and it stops looking like a train.
- *
- * prefers-reduced-motion shows all four lit and static, which is the end state
- * of the animation rather than an approximation of it.
+ * The yellow swipe is aligned to the WORDMARK, not the whole lockup. In the
+ * lockup file the wordmark path starts at 26.04% of the total width and ends
+ * at 96.01%, so those are the two numbers below. It previously started under
+ * the seat mark and overhung the final M, which is what read as crooked.
  */
 const { wordmark } = site;
 ---
@@ -30,16 +23,6 @@ const { wordmark } = site;
   <canvas data-slitscan data-intensity="1.2" aria-hidden="true"></canvas>
   <div class="vig" aria-hidden="true"></div>
 
-  <p class="ticker">
-    {
-      wordmark.stops.map((stop, i) => (
-        <>
-          {i > 0 && <i class="sep" aria-hidden="true" />}
-          <span class="stop">{stop}</span>
-        </>
-      ))
-    }
-  </p>
 
   <div class="lockwrap">
     <img
@@ -63,6 +46,12 @@ const { wordmark } = site;
 <style>
   .brk {
     background: var(--paper-2);
+    /* The band is 387 in the reference and the height is load-bearing: the
+       slitscan is drawn to fill it, and the wave's amplitude and slit length
+       both scale off it. The ticker used to occupy the last ~70px. Taking the
+       ticker out must not shrink the band, so the height stays and the lockup
+       holds the position the reference gave it, 70px down from the top. */
+    min-height: 387px;
     padding: 70px 0 76px;
     position: relative;
     overflow: hidden;
@@ -75,6 +64,24 @@ const { wordmark } = site;
     display: block;
     z-index: 0;
     pointer-events: none;
+    /* The slits are hard-edged rectangles of uniform length, so without this
+       the band terminates in a straight line top and bottom and reads as a
+       strip that got trimmed rather than a wave. The mask dissolves both
+       edges into the paper. Costs nothing per frame. */
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      #000 16%,
+      #000 84%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      #000 16%,
+      #000 84%,
+      transparent 100%
+    );
   }
   .brk > *:not(canvas):not(.vig) {
     position: relative;
@@ -101,250 +108,35 @@ const { wordmark } = site;
       );
   }
 
-  /* --- the subway line ---------------------------------------------------- */
-  .ticker {
-    display: flex;
-    gap: 0;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;
-    /* it is a <p>, so it would otherwise inherit the 1.62 body leading */
-    line-height: normal;
-    padding-inline: 20px;
-  }
-  .stop {
-    position: relative;
-    padding: 0 22px 9px;
-    font-family: var(--font-display);
-    font-weight: 500;
-    font-size: 11.5px;
-    letter-spacing: 0.24em;
-    text-transform: uppercase;
-    color: var(--ink-3);
-    white-space: nowrap;
-  }
-  .stop::after {
-    content: "";
-    position: absolute;
-    left: 22px;
-    right: 22px;
-    bottom: 0;
-    height: 3px;
-    background: var(--yellow);
-    transform: scaleX(0);
-    transform-origin: left center;
-  }
-  .sep {
-    width: 5px;
-    height: 5px;
-    background: var(--paper-3);
-    flex: none;
-    margin-bottom: 9px;
-  }
-
-  /* nth-child counts the separators too, hence 1/3/5/7 */
-  .stop:nth-child(1) {
-    animation: lit1 4.6s linear infinite;
-  }
-  .stop:nth-child(3) {
-    animation: lit2 4.6s linear infinite;
-  }
-  .stop:nth-child(5) {
-    animation: lit3 4.6s linear infinite;
-  }
-  .stop:nth-child(7) {
-    animation: lit4 4.6s linear infinite;
-  }
-  .stop:nth-child(1)::after {
-    animation: bar1 4.6s linear infinite;
-  }
-  .stop:nth-child(3)::after {
-    animation: bar2 4.6s linear infinite;
-  }
-  .stop:nth-child(5)::after {
-    animation: bar3 4.6s linear infinite;
-  }
-  .stop:nth-child(7)::after {
-    animation: bar4 4.6s linear infinite;
-  }
-
-  @keyframes bar1 {
-    0% {
-      transform: scaleX(0);
-    }
-    9%,
-    87% {
-      transform: scaleX(1);
-    }
-    87.5%,
-    100% {
-      transform: scaleX(0);
-    }
-  }
-  @keyframes bar2 {
-    0%,
-    12% {
-      transform: scaleX(0);
-    }
-    21%,
-    87% {
-      transform: scaleX(1);
-    }
-    87.5%,
-    100% {
-      transform: scaleX(0);
-    }
-  }
-  @keyframes bar3 {
-    0%,
-    24% {
-      transform: scaleX(0);
-    }
-    33%,
-    87% {
-      transform: scaleX(1);
-    }
-    87.5%,
-    100% {
-      transform: scaleX(0);
-    }
-  }
-  @keyframes bar4 {
-    0%,
-    36% {
-      transform: scaleX(0);
-    }
-    45%,
-    87% {
-      transform: scaleX(1);
-    }
-    87.5%,
-    100% {
-      transform: scaleX(0);
-    }
-  }
-  @keyframes lit1 {
-    0% {
-      color: #96917f;
-    }
-    9%,
-    87% {
-      color: #23221f;
-    }
-    87.5%,
-    100% {
-      color: #96917f;
-    }
-  }
-  @keyframes lit2 {
-    0%,
-    12% {
-      color: #96917f;
-    }
-    21%,
-    87% {
-      color: #23221f;
-    }
-    87.5%,
-    100% {
-      color: #96917f;
-    }
-  }
-  @keyframes lit3 {
-    0%,
-    24% {
-      color: #96917f;
-    }
-    33%,
-    87% {
-      color: #23221f;
-    }
-    87.5%,
-    100% {
-      color: #96917f;
-    }
-  }
-  @keyframes lit4 {
-    0%,
-    36% {
-      color: #96917f;
-    }
-    45%,
-    87% {
-      color: #23221f;
-    }
-    87.5%,
-    100% {
-      color: #96917f;
-    }
-  }
-
-  /* The end state of the loop, held still.
-     The selectors have to match the nth-child specificity above, not just
-     `.stop`. `.stop:nth-child(1)` is (0,2,0) and plain `.stop` is (0,1,0), so
-     a bare `.stop{animation:none}` loses and the ticker keeps running for
-     exactly the people who asked it not to. The reference has that bug;
-     this does not. Verified with a reduced-motion browser context in
-     tests/visual.spec.ts. */
-  @media (prefers-reduced-motion: reduce) {
-    .stop:nth-child(1),
-    .stop:nth-child(3),
-    .stop:nth-child(5),
-    .stop:nth-child(7),
-    .stop:nth-child(1)::after,
-    .stop:nth-child(3)::after,
-    .stop:nth-child(5)::after,
-    .stop:nth-child(7)::after {
-      animation: none;
-    }
-    .stop {
-      color: var(--ink);
-    }
-    .stop::after {
-      transform: scaleX(1);
-    }
-  }
-
   /* --- lockup -------------------------------------------------------------- */
   .lockwrap {
     position: relative;
     width: 860px;
     max-width: calc(100% - 40px);
-    margin: 44px auto 0;
+    margin: 0 auto;
   }
   .lock {
     display: block;
     width: 100%;
     height: auto;
   }
+  /* 26.04% and 3.99% are where the wordmark path starts and ends inside the
+     lockup file. Percentages rather than pixels, so the line stays aligned at
+     every width the lockup scales to. */
   .swipe {
     position: absolute;
-    left: 152px;
-    right: 2px;
+    left: 26.04%;
+    right: 3.99%;
     bottom: -16px;
     height: 27px;
   }
 
-  @media (max-width: 1023px) {
-    .swipe {
-      left: 17.7%;
-    }
-  }
   @media (max-width: 767px) {
     .brk {
       padding: 44px 0 52px;
     }
-    .stop {
-      padding: 0 12px 8px;
-      font-size: 10px;
-      letter-spacing: 0.18em;
-    }
-    .stop::after {
-      left: 12px;
-      right: 12px;
-    }
     .lockwrap {
-      margin-top: 30px;
+      margin-top: 0;
     }
     .swipe {
       bottom: -8px;
