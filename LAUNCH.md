@@ -302,7 +302,14 @@ What makes that true rather than wishful: the Consent Mode defaults above deny a
    - Tag ID: your `G-XXXXXXXX`
    - Trigger: **Initialization - All Pages**
 2. **Admin → Install Google Tag Manager** and copy the two snippets. They go in `src/layouts/Base.astro`: the `<script>` in `<head>`, the `<noscript>` iframe immediately after `<body>`.
-3. **The CSP will block it until you allow it.** In `public/_headers`, add `https://www.googletagmanager.com` to `script-src` and `connect-src`, and `https://*.google-analytics.com` to `connect-src`. Deploy and check the browser console for CSP violations before you trust the data.
+3. **The CSP will block it until you allow it.** The site currently ships a strict `script-src 'self' https://challenges.cloudflare.com https://app.cal.com https://cal.com` with **no `'unsafe-inline'`**, because it has no inline scripts. GTM's snippet is inline and its tags inject more, so in `public/_headers` you will need to:
+   - add `'unsafe-inline' https://www.googletagmanager.com` to `script-src`
+   - add `https://www.googletagmanager.com https://*.google-analytics.com https://*.analytics.google.com` to `connect-src`
+   - add `https://www.googletagmanager.com` to `img-src`
+
+   That is a real loosening, and it is the price of GTM. If you would rather keep the strict policy, put the GA4 tag on the page directly instead of through GTM and use a nonce. Either way: deploy, open the console, and confirm there are no CSP violations before you trust a single number.
+
+   Check it with `npm run check:csp` after `npx wrangler dev`, which loads every page and reports any blocked request.
 
 ### 8e. Turn off the enhanced measurement you do not want
 

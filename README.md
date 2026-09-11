@@ -71,8 +71,8 @@ src/
 worker/index.ts          POST /api/lead; everything else falls through to assets
 migrations/              D1 schema
 public/                  fonts, brand, logos, photos, _headers, robots.txt, llms.txt
-tests/                   visual.spec.ts, a11y.spec.ts
-scripts/                 build-assets, compare-reference, compare-design, lh-summary
+tests/                   visual.spec.ts, a11y.spec.ts, analytics.spec.ts
+scripts/                 build-assets, compare-reference, compare-design, lh-summary, dev-csp
 ```
 
 **`src/content/site.ts` is a hard rule.** Not one string of user-facing copy lives in a component. JD edits copy by editing that one file.
@@ -249,3 +249,5 @@ npx wrangler deploy
 ```
 
 Cloudflare Workers static assets, configured in `wrangler.jsonc`. `public/_headers` carries the security headers and cache policy and is applied to asset responses; Worker responses set their own headers in code.
+
+The CSP is strict: `script-src` is `'self'` plus Turnstile and Cal.com, with **no `'unsafe-inline'`**, because the site has no inline scripts. Verified with `npm run check:csp` against `wrangler dev`, which loads every page, focuses a form so Turnstile loads, warms the Cal embed, and reports any blocked request. Adding Google Tag Manager will require loosening this; see LAUNCH.md section 8d.
