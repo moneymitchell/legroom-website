@@ -1,9 +1,9 @@
 [
   {
-    "url": "http://localhost:55222/index.html",
+    "url": "http://localhost:56467/index.html",
     "isRepresentativeRun": false,
-    "htmlPath": "/Users/jdworcester/Desktop/Legroom/legroom-web/.lighthouseci-mobile/localhost-index_html-2026_09_11_05_45_28.report.html",
-    "jsonPath": "/Users/jdworcester/Desktop/Legroom/legroom-web/.lighthouseci-mobile/localhost-index_html-2026_09_11_05_45_28.report.json",
+    "htmlPath": "/Users/jdworcester/Desktop/Legroom/legroom-web/.lighthouseci-mobile/localhost-index_html-2026_09_11_05_59_57.report.html",
+    "jsonPath": "/Users/jdworcester/Desktop/Legroom/legroom-web/.lighthouseci-mobile/localhost-index_html-2026_09_11_05_59_57.report.json",
     "summary": {
       "performance": 1,
       "accessibility": 0.97,
@@ -12,10 +12,10 @@
     }
   },
   {
-    "url": "http://localhost:55222/index.html",
+    "url": "http://localhost:56467/index.html",
     "isRepresentativeRun": false,
-    "htmlPath": "/Users/jdworcester/Desktop/Legroom/legroom-web/.lighthouseci-mobile/localhost-index_html-2026_09_11_05_45_50.report.html",
-    "jsonPath": "/Users/jdworcester/Desktop/Legroom/legroom-web/.lighthouseci-mobile/localhost-index_html-2026_09_11_05_45_50.report.json",
+    "htmlPath": "/Users/jdworcester/Desktop/Legroom/legroom-web/.lighthouseci-mobile/localhost-index_html-2026_09_11_06_00_09.report.html",
+    "jsonPath": "/Users/jdworcester/Desktop/Legroom/legroom-web/.lighthouseci-mobile/localhost-index_html-2026_09_11_06_00_09.report.json",
     "summary": {
       "performance": 1,
       "accessibility": 0.97,
@@ -24,10 +24,10 @@
     }
   },
   {
-    "url": "http://localhost:55222/index.html",
+    "url": "http://localhost:56467/index.html",
     "isRepresentativeRun": true,
-    "htmlPath": "/Users/jdworcester/Desktop/Legroom/legroom-web/.lighthouseci-mobile/localhost-index_html-2026_09_11_05_45_39.report.html",
-    "jsonPath": "/Users/jdworcester/Desktop/Legroom/legroom-web/.lighthouseci-mobile/localhost-index_html-2026_09_11_05_45_39.report.json",
+    "htmlPath": "/Users/jdworcester/Desktop/Legroom/legroom-web/.lighthouseci-mobile/localhost-index_html-2026_09_11_05_59_46.report.html",
+    "jsonPath": "/Users/jdworcester/Desktop/Legroom/legroom-web/.lighthouseci-mobile/localhost-index_html-2026_09_11_05_59_46.report.json",
     "summary": {
       "performance": 1,
       "accessibility": 0.97,

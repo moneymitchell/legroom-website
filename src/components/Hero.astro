@@ -371,9 +371,15 @@ const fig = hero.figure;
   }
 
   /* --- responsive --------------------------------------------------------
-     >=1280  the reference layout, exactly: 672 + 76 + 452
-     1024-1279  the drawing keeps its fixed 452px box, the copy column gives way
-     <1024   stack, and hand the drawing off to the simplified mobile slot    */
+     The measured drawing is absolutely positioned in a fixed 452x472 box and
+     does not scale. Beside it the copy column needs about 560px before the two
+     CTAs stop fitting on one line, so two columns need 452 + 52 + 560 + 80 of
+     gutters = 1144. Below 1180 the layout stacks and the drawing hands off to
+     the simplified slot the phone design uses.
+
+     >=1280   the reference layout, exactly: 672 + 76 + 452
+     1180-1279  same two columns, the copy column gives way first
+     <1180    stacked                                                        */
   @media (max-width: 1279px) {
     .grid {
       grid-template-columns: minmax(0, 1fr) 452px;
@@ -388,7 +394,7 @@ const fig = hero.figure;
     }
   }
 
-  @media (max-width: 1023px) {
+  @media (max-width: 1179px) {
     .grid {
       grid-template-columns: minmax(0, 1fr);
       gap: 0;
@@ -403,6 +409,16 @@ const fig = hero.figure;
     }
     h1 {
       font-size: clamp(48px, 7vw, 64px);
+    }
+    /* Stacked, the slot runs to the bottom of the hero and the scan strip
+       would sit on top of it. The phone design has no strip at all, so drop
+       it as soon as the layout stacks and close the hero with padding. */
+    .scanstrip {
+      display: none;
+    }
+    .hero {
+      min-height: 0;
+      padding-bottom: 56px;
     }
   }
 

@@ -30,6 +30,7 @@ import { bookHref, contactHref } from "@/lib/links";
   import { initSlitscans } from "@/scripts/slitscan";
   import { initForms } from "@/scripts/form";
   import { initCal, tagCalLinks } from "@/scripts/cal";
+  import { initAnalytics } from "@/scripts/analytics";
   import { calSlug } from "@/lib/links";
 
   // Wiring first: it is cheap, and the CTAs and forms have to be live the
@@ -37,6 +38,7 @@ import { bookHref, contactHref } from "@/lib/links";
   initForms(import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "");
   tagCalLinks(calSlug);
   initCal(calSlug);
+  initAnalytics();
 
   // The slitscan loops are ambient texture, not content, and they are the only
   // continuous work on the page. Starting them once the main thread is idle

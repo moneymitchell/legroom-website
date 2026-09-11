@@ -30,8 +30,11 @@
     {
       "binding": "DB",
       "database_name": "legroom-leads",
-      // replace with the id printed by `wrangler d1 create legroom-leads`
-      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+      // MUST BE REPLACED before `wrangler deploy`, with the id printed by
+      // `wrangler d1 create legroom-leads`. The all-zero value below is a
+      // well-formed placeholder so `wrangler dev` works out of the box; it
+      // does not point at a real database. See LAUNCH.md step 0.
+      "database_id": "00000000-0000-0000-0000-000000000000",
       "migrations_dir": "migrations"
     }
   ],
@@ -39,8 +42,9 @@
   "kv_namespaces": [
     {
       "binding": "LEAD_RATE",
-      // replace with the id printed by `wrangler kv namespace create LEAD_RATE`
-      "id": "REPLACE_WITH_KV_NAMESPACE_ID"
+      // MUST BE REPLACED before `wrangler deploy`, with the id printed by
+      // `wrangler kv namespace create LEAD_RATE`. See LAUNCH.md step 0.
+      "id": "0000000000000000000000000000000a"
     }
   ]
 }
