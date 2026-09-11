@@ -1,0 +1,176 @@
+/* ============================================================================
+   Global stylesheet. Order matters:
+   1. @font-face  — self-hosted, subset, font-display:block (no FOUT swap)
+   2. tokens.css  — the contract
+   3. @theme      — hands the SAME variables to Tailwind so utilities and
+                    hand-written CSS can never drift apart
+   4. base        — focus, motion, responsive wrapper
+   ========================================================================= */
+
+@font-face {
+  font-family: "Oswald";
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+  src: url("/fonts/Oswald-700.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Oswald";
+  font-weight: 500;
+  font-style: normal;
+  font-display: block;
+  src: url("/fonts/Oswald-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "DM Sans";
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+  src: url("/fonts/DMSans-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "DM Sans";
+  font-weight: 600;
+  font-style: normal;
+  font-display: block;
+  src: url("/fonts/DMSans-600.woff2") format("woff2");
+}
+
+@import "tailwindcss";
+@import "./tokens.css";
+
+/* Tailwind reads the tokens. One source of truth, two syntaxes. */
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-paper-3: var(--paper-3);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-rule: var(--rule);
+  --color-charcoal: var(--charcoal);
+  --color-yellow: var(--yellow);
+  --color-yellow-deep: var(--yellow-deep);
+
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+
+  --ease-brand: var(--ease);
+
+  /* sharp corners, everywhere, forever */
+  --radius-none: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+}
+
+/* --- base --------------------------------------------------------------- */
+
+html {
+  scroll-padding-top: 24px;
+  -webkit-text-size-adjust: 100%;
+  /* The design was authored with no CSS reset, so everything that does not
+     declare a line-height inherits `normal`. Tailwind's preflight sets 1.5,
+     which silently grew the spots chip by 2.3px and pushed the whole hero
+     column down with it. Restore the value the design was drawn against.
+     Every element that needs a real line-height sets one in tokens.css. */
+  line-height: normal;
+}
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+img,
+svg {
+  max-width: 100%;
+}
+
+/* Focus: always visible, always brand. Never outline:none without a
+   replacement. Charcoal ring on paper, yellow ring on the dark band. */
+:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+[data-theme="dark"] :focus-visible,
+.brk :focus-visible {
+  outline-color: var(--yellow);
+}
+.btn:focus-visible,
+.navbtn:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 4px;
+}
+
+::selection {
+  background: var(--yellow);
+  color: var(--charcoal);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  background: var(--yellow);
+  color: var(--charcoal);
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tr-btn);
+  padding: 14px 22px;
+  box-shadow: 0 3px 0 0 var(--ink);
+}
+.skip:focus {
+  left: 12px;
+  top: 12px;
+}
+
+/* --- responsive wrapper -------------------------------------------------
+   The design is a 1440 board with a 1200 wrapper (120px gutters). Below
+   1240 the wrapper becomes fluid and the gutters shrink. Nothing about the
+   composition changes; only the container narrows.                        */
+@media (max-width: 1279px) {
+  .wrap {
+    width: 100%;
+    padding-inline: 40px;
+  }
+}
+@media (max-width: 767px) {
+  .wrap {
+    padding-inline: var(--gutter);
+  }
+}
+
+/* --- motion ------------------------------------------------------------
+   Nothing on this page fades in on scroll. The only unprompted motion is
+   the spots dot. Reduced motion stops the dot and the chevron nudge; the
+   canvases handle it themselves by drawing one frame (see slitscan.ts).  */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .dot::after {
+    animation: none;
+    opacity: 0;
+  }
+}

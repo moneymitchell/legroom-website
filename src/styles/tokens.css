@@ -1,0 +1,284 @@
+/* ============================================================================
+   LEGROOM design tokens.
+
+   Copied verbatim from handoff/tokens.css (the design source of truth), then
+   extended below with the values the reference sections declared inline.
+
+   This file is a CONTRACT. Every color, size, spacing value and easing curve in
+   the site resolves to one of these custom properties. If you are about to type
+   a raw hex value into a component, stop: add it here first, or you have found
+   a color the design does not have.
+   ========================================================================= */
+
+:root {
+  /* --- surfaces: three papers, never one white --- */
+  --paper: #f4f1ea; /* page ground */
+  --paper-2: #eae5da; /* Manila: alternating sections, chips, founder photo ground */
+  --paper-3: #ded7c7; /* card edge, dashed rules, the 2px lip under raised paper */
+
+  /* --- ink --- */
+  --ink: #23221f; /* body ink, headlines, hard rules */
+  --ink-2: #6b675e; /* supporting copy */
+  --ink-3: #96917f; /* dimmed labels, annotations, step numerals */
+  --rule: #cfc8b9; /* hairlines */
+  --charcoal: #1c1c1a; /* the dark band, button bases, mark */
+
+  /* --- signal: exactly one accent --- */
+  --yellow: #ffc800;
+  --yellow-deep: #e9b300;
+  --yellow-lift: #ffd230; /* button face on hover only */
+  --wash: rgba(255, 200, 0, 0.46);
+
+  /* --- motion --- */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --t-press: 0.09s; /* button press + lift */
+  --t-tint: 0.16s; /* background-color changes */
+  --t-arrow: 0.18s; /* the arrow nudge */
+  --t-wipe: 0.22s; /* nav underline wipe, step row step-right */
+  --t-card: 0.3s; /* receipt rotate, ghost logo fade */
+
+  /* --- layout --- */
+  --wrap: 1200px; /* content wrapper, centered; 120px gutters at 1440 */
+  --gutter: 20px; /* page padding below the wrapper width */
+
+  /* --- type: families and the sizes the reference actually used --- */
+  --font-display: "Oswald", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --fs-h1: 76px;
+  --fs-h1-m: 44px;
+  --fs-h2: 50px;
+  --fs-h2-promise: 56px;
+  --fs-h2-cta: 58px;
+  --fs-lead: 19px;
+  --fs-body: 17px;
+  --fs-small: 13.5px;
+  --fs-eyebrow: 11.5px;
+
+  --lh-display: 0.94;
+  --lh-body: 1.62;
+
+  --tr-display: 0.012em;
+  --tr-eyebrow: 0.18em;
+  --tr-label: 0.14em;
+  --tr-btn: 0.055em;
+}
+
+/* --- base ---------------------------------------------------------------- */
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "ss01", "cv01";
+}
+.wrap {
+  width: var(--wrap);
+  margin: 0 auto;
+  position: relative;
+}
+h1,
+h2,
+h3,
+.d {
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tr-display);
+  line-height: var(--lh-display);
+  margin: 0;
+}
+.eyebrow {
+  font-weight: 600;
+  font-size: var(--fs-eyebrow);
+  letter-spacing: var(--tr-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0;
+}
+p {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+.lead {
+  color: var(--ink);
+  font-size: var(--fs-lead);
+  line-height: 1.58;
+}
+.small {
+  font-size: var(--fs-small);
+  line-height: 1.55;
+  color: var(--ink-3);
+}
+.rule {
+  height: 1px;
+  background: var(--rule);
+  border: 0;
+  margin: 0;
+}
+.tag {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: var(--tr-label);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* --- sharpie marks -------------------------------------------------------
+   The highlight is an SVG painted BEHIND the text, not a background-color.
+   .hl needs z-index:0 to open a stacking context, or the z-index:-1 child
+   drops behind the section background and disappears. Do not remove it.     */
+.hl {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+  z-index: 0;
+}
+.hl > svg {
+  position: absolute;
+  left: -2.6%;
+  width: 105.2%;
+  height: 0.95em;
+  bottom: -0.08em;
+  z-index: -1;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  transform: rotate(-0.55deg);
+}
+.ul {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+}
+.ul > svg {
+  position: absolute;
+  left: -1%;
+  width: 102%;
+  height: 0.3em;
+  bottom: -0.16em;
+  pointer-events: none;
+}
+
+/* --- arcade button -------------------------------------------------------
+   Rest 5px base, hover lifts 2px onto a 7px base, press travels the full 5px
+   onto a 0px base. The ::after strip is the 2px specular lip that makes the
+   yellow read as a physical face. 90ms. Do not soften any of it.            */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tr-btn);
+  font-size: 16px;
+  padding: 17px 28px 16px;
+  border-radius: 0;
+  position: relative;
+  transition:
+    transform var(--t-press) var(--ease),
+    box-shadow var(--t-press) var(--ease),
+    background-color var(--t-tint) var(--ease);
+  will-change: transform;
+  text-decoration: none;
+}
+.btn-y {
+  background: var(--yellow);
+  color: var(--charcoal);
+  box-shadow:
+    0 5px 0 0 var(--charcoal),
+    0 6px 14px rgba(28, 28, 26, 0.16);
+}
+.btn-y:hover {
+  background: var(--yellow-lift);
+  transform: translateY(-2px);
+  box-shadow:
+    0 7px 0 0 var(--charcoal),
+    0 12px 22px rgba(28, 28, 26, 0.2);
+}
+.btn-y:active {
+  transform: translateY(5px);
+  box-shadow:
+    0 0 0 0 var(--charcoal),
+    0 1px 3px rgba(28, 28, 26, 0.3);
+}
+.btn-y::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.55);
+}
+.btn-g {
+  background: transparent;
+  color: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+.btn-g:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+.btn-g:active {
+  transform: translateY(2px);
+}
+.btn .arw {
+  transition: transform var(--t-arrow) var(--ease);
+}
+.btn:hover .arw {
+  transform: translateX(4px);
+}
+
+/* --- spots chip ---------------------------------------------------------
+   The dot's ping is the only thing on the page that moves unprompted.      */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 14px 7px 12px;
+  background: var(--paper-2);
+  box-shadow: inset 0 0 0 1px var(--rule);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.dot {
+  position: relative;
+  width: 9px;
+  height: 9px;
+  background: var(--yellow);
+  border-radius: 50%;
+  flex: none;
+  box-shadow: 0 0 0 1px var(--yellow-deep) inset;
+}
+.dot::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--yellow);
+  animation: ping 1.9s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+@keyframes ping {
+  0% {
+    transform: scale(0.55);
+    opacity: 0.9;
+  }
+  70% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+  }
+}
