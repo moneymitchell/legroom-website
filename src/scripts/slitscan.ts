@@ -62,10 +62,22 @@ export function mountSlitscan(canvas: HTMLCanvasElement): () => void {
   let mk = 0;
   let mtk = 0;
 
-  // Cached so pointer moves never force a layout. Refreshed on scroll and
-  // resize, the only times the canvas moves relative to the viewport.
+  // Cached so pointer moves never force a layout, and INVALIDATED rather than
+  // recomputed when the canvas moves. Reading the rect in the scroll handler
+  // is a sync layout read on every scroll frame, and it lands before the
+  // scroll has settled, so the cache can hold a position the canvas was only
+  // passing through. Recompute on the next pointer move instead: rarer, and
+  // it cannot be stale when it matters. See the same note in measure-rule.ts.
   let rectLeft = 0;
   let rectTop = 0;
+  let rectDirty = true;
+
+  const refresh = () => {
+    const r = canvas.getBoundingClientRect();
+    rectLeft = r.left;
+    rectTop = r.top;
+    rectDirty = false;
+  };
 
   const measure = () => {
     const r = canvas.getBoundingClientRect();
@@ -73,6 +85,7 @@ export function mountSlitscan(canvas: HTMLCanvasElement): () => void {
     rectTop = r.top;
     W = r.width || canvas.width;
     H = r.height || canvas.height;
+    rectDirty = false;
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
@@ -83,6 +96,7 @@ export function mountSlitscan(canvas: HTMLCanvasElement): () => void {
   };
 
   const onMove = (e: MouseEvent) => {
+    if (rectDirty) refresh();
     mtx = e.clientX - rectLeft;
     mty = e.clientY - rectTop;
     mtk = 1;
@@ -91,9 +105,7 @@ export function mountSlitscan(canvas: HTMLCanvasElement): () => void {
     mtk = 0;
   };
   const onScroll = () => {
-    const r = canvas.getBoundingClientRect();
-    rectLeft = r.left;
-    rectTop = r.top;
+    rectDirty = true;
   };
 
   const draw = (t: number) => {
