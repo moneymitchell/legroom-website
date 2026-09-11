@@ -4,7 +4,7 @@ import Chip from "./ui/Chip.astro";
 import { site } from "@/content/site";
 
 /**
- * CTA + founder cards. 995px at 1440.
+ * CTA + founder cards. 1043px at 1440, cards 772 tall.
  *
  * Left: the ask, the four Q&A rows, both CTAs, the spots chip.
  * Right: the two-card vertical scroll deck with its dot rail.
@@ -143,12 +143,18 @@ const { cta, founders } = site;
                     </div>
                   </div>
 
+                  <p class="pills">
+                    {f.pills.map((pill) => <span>{pill}</span>)}
+                  </p>
+
                   <dl class="crows">
                     {
                       f.stats.map((s) => (
                         <div class="crow">
                           <dt class="l">{s.label}</dt>
-                          <dd class="v">{s.value}</dd>
+                          <dd class="v">
+                            {s.href ? <a href={s.href}>{s.value}</a> : s.value}
+                          </dd>
                         </div>
                       ))
                     }
@@ -259,14 +265,14 @@ const { cta, founders } = site;
     grid-template-columns: 1fr 34px;
     gap: 12px;
     align-items: stretch;
-    height: 724px;
+    height: 772px;
     /* REQUIRED: the dots are outside .rail, so the timeline name has to be
        scoped here or their animation never runs. */
     timeline-scope: --deck;
   }
   .rail {
     position: relative;
-    height: 724px;
+    height: 772px;
     overflow-y: auto;
     scroll-snap-type: y mandatory;
     scrollbar-width: none;
@@ -280,7 +286,7 @@ const { cta, founders } = site;
     outline-offset: 2px;
   }
   .card {
-    height: 724px;
+    height: 772px;
     scroll-snap-align: center;
     scroll-snap-stop: always;
     padding: 16px 2px 16px 9px;
@@ -345,15 +351,15 @@ const { cta, founders } = site;
 
   .chead {
     display: grid;
-    grid-template-columns: 192px 1fr;
-    gap: 20px;
+    grid-template-columns: 184px 1fr;
+    gap: 18px;
     margin-top: 18px;
   }
   /* Photos sit on Manila, not white. They were composited that way so the two
      headshots read as one set. Do not put them on a white card. */
   .pic {
-    width: 192px;
-    height: 256px;
+    width: 184px;
+    height: 246px;
     border-radius: 7px;
     overflow: hidden;
     position: relative;
@@ -393,16 +399,17 @@ const { cta, founders } = site;
   .school {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
-    margin-top: 14px;
-    padding: 6px 10px;
+    gap: 6px;
+    margin-top: 13px;
+    padding: 6px 9px;
     background: var(--paper-2);
     box-shadow: inset 0 0 0 1px var(--rule);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.055em;
     text-transform: uppercase;
     color: var(--ink);
+    white-space: nowrap;
   }
   .socials {
     display: flex;
@@ -415,6 +422,7 @@ const { cta, founders } = site;
     align-items: center;
     gap: 6px;
     padding: 6px 10px;
+    white-space: nowrap;
     background: var(--paper);
     box-shadow: inset 0 0 0 1px var(--rule);
     font-size: 10.5px;
@@ -434,8 +442,26 @@ const { cta, founders } = site;
     transform: translateY(-1px);
   }
 
+  /* R2: interests, between the socials and the stat rows */
+  .pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 16px 0 0;
+  }
+  .pills span {
+    background: var(--paper-2);
+    padding: 5px 9px;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
   .crows {
-    margin: 20px 0 0;
+    margin: 16px 0 0;
   }
   .crow {
     display: flex;
@@ -461,11 +487,21 @@ const { cta, founders } = site;
     margin: 0;
     text-align: right;
   }
+  /* a yellow rule that fills on hover, rather than an underline that moves */
+  .crow .v a {
+    color: inherit;
+    text-decoration: none;
+    box-shadow: inset 0 -2px 0 0 var(--yellow);
+    transition: background-color 0.18s var(--ease);
+  }
+  .crow .v a:hover {
+    background: var(--yellow);
+  }
   .cbio {
     font-size: 14.5px;
-    line-height: 1.58;
+    line-height: 1.56;
     color: var(--ink-2);
-    margin-top: 18px;
+    margin-top: 16px;
   }
   .cquote {
     margin: auto 0 0;

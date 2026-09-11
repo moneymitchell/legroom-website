@@ -169,7 +169,14 @@ p {
 /* --- arcade button -------------------------------------------------------
    Rest 5px base, hover lifts 2px onto a 7px base, press travels the full 5px
    onto a 0px base. The ::after strip is the 2px specular lip that makes the
-   yellow read as a physical face. 90ms. Do not soften any of it.            */
+   yellow read as a physical face. 90ms. Do not soften any of it.
+
+   R2 adds pointer-tracked side depth. --tx runs from -1 at the left edge of a
+   button to +1 at the right, set by scripts/pointer-tilt.ts on fine pointers
+   only, and the hard shadow's x offset follows it. The block face appears on
+   the side away from the cursor, so the button reads as a solid object seen
+   from an angle. --tx defaults to 0, so touch devices and a blocked script
+   both get the straight-on shadow the design started with.                  */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -195,14 +202,14 @@ p {
   background: var(--yellow);
   color: var(--charcoal);
   box-shadow:
-    0 5px 0 0 var(--charcoal),
+    calc(var(--tx, 0) * -3px) 5px 0 0 var(--charcoal),
     0 6px 14px rgba(28, 28, 26, 0.16);
 }
 .btn-y:hover {
   background: var(--yellow-lift);
   transform: translateY(-2px);
   box-shadow:
-    0 7px 0 0 var(--charcoal),
+    calc(var(--tx, 0) * -6px) 7px 0 0 var(--charcoal),
     0 12px 22px rgba(28, 28, 26, 0.2);
 }
 .btn-y:active {
@@ -221,14 +228,22 @@ p {
 .btn-g {
   background: transparent;
   color: var(--ink);
-  box-shadow: inset 0 0 0 2px var(--ink);
+  box-shadow:
+    inset 0 0 0 2px var(--ink),
+    calc(var(--tx, 0) * -2px) 2px 0 0 rgba(28, 28, 26, 0.22);
 }
 .btn-g:hover {
   background: var(--ink);
   color: var(--paper);
+  box-shadow:
+    inset 0 0 0 2px var(--ink),
+    calc(var(--tx, 0) * -5px) 5px 0 0 rgba(28, 28, 26, 0.3);
 }
 .btn-g:active {
   transform: translateY(2px);
+  box-shadow:
+    inset 0 0 0 2px var(--ink),
+    0 0 0 0 rgba(28, 28, 26, 0);
 }
 .btn .arw {
   transition: transform var(--t-arrow) var(--ease);
@@ -281,4 +296,22 @@ p {
   100% {
     opacity: 0;
   }
+}
+
+/* --- marker underline ------------------------------------------------------
+   Rides under the baseline instead of overlaying the glyphs, which is what
+   separates it from .hl. Used once, on "15+ HOURS".                         */
+.mu {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+}
+.mu > svg {
+  position: absolute;
+  left: -1.5%;
+  width: 103%;
+  height: 0.28em;
+  bottom: -0.2em;
+  pointer-events: none;
+  mix-blend-mode: multiply;
 }

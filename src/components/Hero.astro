@@ -6,10 +6,10 @@ import Highlight from "./ui/Highlight.astro";
 import { site } from "@/content/site";
 
 /**
- * Hero. 836px tall at 1440.
+ * Hero. 860px tall at 1440.
  *
  * Left: chip, the 76px headline with the sharpie on LEGROOM, two CTAs, the
- * trust line. Right: the measured-drawing panel — a dashed slot with a dot grid,
+ * trust line. Right: the measured-drawing panel, a dashed slot with a dot grid,
  * the mark, dimension bars and leader lines. The single yellow accent in the
  * drawing is the "legroom" measure at the bottom (C).
  *
@@ -75,13 +75,13 @@ const fig = hero.figure;
           <circle cx="5" cy="34" r="3.2" fill="#23221F" opacity=".7"></circle>
           <path d="M7 32 C 52 28, 96 16, 146 7" stroke="#23221F" stroke-width="1.4" stroke-linecap="round" opacity=".5"></path>
         </svg>
-        <span class="ann key a-note1" set:html={fig.note1.replace("\n", "<br>")} />
+        <span class="ann key a-note1" set:html={fig.note1.replace(/\n/g, "<br>")} />
 
         <svg class="lead2" width="94" height="58" viewBox="0 0 94 58" fill="none" aria-hidden="true">
           <circle cx="5" cy="8" r="3.2" fill="#23221F" opacity=".7"></circle>
           <path d="M7 10 C 38 20, 64 38, 90 50" stroke="#23221F" stroke-width="1.4" stroke-linecap="round" opacity=".5"></path>
         </svg>
-        <span class="ann key a-note2" set:html={fig.note2.replace("\n", "<br>")} />
+        <span class="ann key a-note2" set:html={fig.note2.replace(/\n/g, "<br>")} />
 
         <svg class="dim-h" width="16" height="200" viewBox="0 0 16 200" fill="none" aria-hidden="true">
           <path d="M3 1 H13 M3 199 H13 M8 1 V199" stroke="#96917F" stroke-width="1.2"></path>
@@ -134,7 +134,7 @@ const fig = hero.figure;
   </div>
 
   <div class="scanstrip" aria-hidden="true">
-    <canvas data-slitscan="light" aria-hidden="true"></canvas>
+    <canvas data-slitscan data-intensity="0.85" aria-hidden="true"></canvas>
     <div class="fade"></div>
   </div>
 </header>
@@ -144,7 +144,7 @@ const fig = hero.figure;
     background: var(--paper);
     position: relative;
     overflow: hidden;
-    min-height: 836px;
+    min-height: 860px;
   }
 
   .grid {
@@ -180,6 +180,12 @@ const fig = hero.figure;
     width: 34px;
     height: 2px;
     background: var(--ink-3);
+  }
+  /* R2: up from 11px/--ink-3. It was too quiet to read as a claim. */
+  .trust .tag {
+    font-size: 12.5px;
+    letter-spacing: 0.15em;
+    color: var(--ink-2);
   }
 
   /* --- the measured drawing --------------------------------------------- */
@@ -287,7 +293,7 @@ const fig = hero.figure;
     left: 0;
     right: 0;
     bottom: 0;
-    height: 104px;
+    height: 128px;
     overflow: hidden;
     background: linear-gradient(
       180deg,

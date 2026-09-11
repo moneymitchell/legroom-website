@@ -1,13 +1,18 @@
 ---
 import Underline from "./ui/Underline.astro";
+import MarkerUnderline from "./ui/MarkerUnderline.astro";
 import { site } from "@/content/site";
 
 /**
- * The Promise. 796px at 1440, back on paper.
+ * The Promise. 828px at 1440, back on paper.
  *
  * Three outcome cards under one hard 2px rule, divided by hairlines. Only the
- * first figure carries the sharpie sweep — one mark per section, never two.
- * Cards tint to Manila on hover. Nothing scales, nothing fades in.
+ * first figure carries a mark, and in R2 it is the marker underline, which
+ * rides under the baseline rather than over the glyphs. One mark per section,
+ * never two. Cards tint to Manila on hover. Nothing scales, nothing fades in.
+ *
+ * R2 merged the hours and the payroll dollars into one card, so the dollar
+ * figure now lives in the body copy instead of competing for the headline.
  *
  * The honesty footnote is not optional garnish: it is the reason the numbers
  * above it are believable.
@@ -28,16 +33,7 @@ const { promise } = site;
         promise.cards.map((c) => (
           <li class="card">
             <p class="num">
-              {c.figure}
-              {c.swept && (
-                <svg class="sw" viewBox="0 0 320 30" preserveAspectRatio="none" aria-hidden="true">
-                  <path
-                    fill="#FFC800"
-                    fill-opacity=".5"
-                    d="M2,26 C60,22 140,27 220,23 C270,20 300,25 318,21 L317,5 C270,9 200,3 130,7 C70,11 30,5 3,9 Z"
-                  />
-                </svg>
-              )}
+              {c.underlined ? <MarkerUnderline>{c.figure}</MarkerUnderline> : c.figure}
             </p>
             <h3>{c.label}</h3>
             <p class="body">{c.body}</p>
@@ -65,8 +61,7 @@ const { promise } = site;
 
 <style>
   .sec {
-    padding: 96px 0 76px;
-    min-height: 640px;
+    padding: 96px 0 78px;
   }
   h2 {
     font-size: var(--fs-h2-promise);
@@ -103,29 +98,22 @@ const { promise } = site;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.005em;
-    font-size: 62px;
+    font-size: 60px;
     line-height: 1;
     white-space: nowrap;
     color: var(--ink);
-    position: relative;
     display: inline-block;
-    z-index: 0;
   }
-  .num .sw {
-    position: absolute;
-    left: -3%;
-    width: 106%;
-    height: 0.54em;
-    bottom: 0.1em;
-    z-index: -1;
-    mix-blend-mode: multiply;
-  }
+  /* R2: Oswald, uppercase, and further from the figure so the underline has
+     room to sit under the baseline. */
   .card h3 {
-    font-size: 15px;
+    font-family: var(--font-display);
+    font-size: 14px;
     letter-spacing: var(--tr-label);
-    margin-top: 18px;
+    margin-top: 26px;
     color: var(--ink-2);
     font-weight: 500;
+    text-transform: uppercase;
   }
   .card .body {
     font-size: 15.5px;
@@ -137,7 +125,7 @@ const { promise } = site;
     gap: 14px;
     align-items: flex-start;
     margin-top: 40px;
-    max-width: 760px;
+    max-width: 780px;
   }
   .foot svg {
     flex: none;
@@ -152,13 +140,10 @@ const { promise } = site;
       padding: 28px 24px 32px;
     }
     .num {
-      font-size: clamp(40px, 4.3vw, 62px);
+      font-size: clamp(40px, 4.3vw, 60px);
     }
   }
   @media (max-width: 1023px) {
-    .sec {
-      min-height: 0;
-    }
     .cards {
       grid-template-columns: minmax(0, 1fr);
     }

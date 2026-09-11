@@ -2,84 +2,56 @@
  * ============================================================================
  * Slitscan canvas engine.
  *
- * One engine, two presets. Ported from handoff/snippets/slitscan.js (dark, the
- * wordmark band) and slitscan-light.js (light, the hero's bottom strip). The two
- * snippets were byte-identical apart from the constants below, so they collapse
- * into one module with two configs.
+ * R2: one engine, one preset. Both bands now run the light variant and differ
+ * only by a `data-intensity` multiplier read off the canvas: 0.85 for the
+ * 128px hero strip, 1.2 for the 387px wordmark band. The dark variant is gone
+ * along with the charcoal background it lived on.
+ *
+ * Amplitude and slit length scale from the band height, so the same wave reads
+ * correctly at 128px and at 387px without a second set of constants.
+ *
+ * EVERY SLIT IS CLAMPED INSIDE THE BAND. Without the clamp the wave clips flat
+ * against the top and bottom edges wherever the pointer pushes it, which is
+ * what the clamp in the R2 snippet exists to stop. Do not remove it.
  *
  * THE POINTER IS SMOOTHED, NOT TRACKED. Position lerps at 0.12 per frame and
- * lens strength at 0.06. The resulting ~5-frame lag is the entire effect. If you
- * make it follow the cursor exactly it stops feeling physical and starts feeling
- * cheap. Do not "fix" it.
+ * lens strength at 0.06. The resulting lag is the entire effect. Making it
+ * follow the cursor exactly stops it feeling physical.
  *
  * Reduced motion draws ONE static frame and never starts the loop. It is not
  * slowed down, it is stopped.
+ *
+ * Ported from handoff/snippets/slitscan-light.js.
  * ========================================================================= */
 
-export type SlitscanConfig = {
-  /** Column pitch in px. */
-  cw: number;
-  /** Gap between slits in px. */
-  gap: number;
-  /** Wave speed. */
-  speed: number;
-  /** Waves across the full width. */
-  waves: number;
-  /** Pointer falloff radius in px. */
-  lens: number;
-  /** Resting wave amplitude. */
-  baseAmp: number;
-  /** Resting slit length. */
-  baseLen: number;
-  /** Cold colour, as [r,g,b]. Mixes toward Signal Yellow as heat rises. */
-  bone: readonly [number, number, number];
-  /** Alpha floor. */
-  alphaBase: number;
-  /** Alpha added at full heat. */
-  alphaHeat: number;
-};
+const CW = 8; // column pitch in px
+const GAP = 2.4; // gap between slits
+const SPEED = 0.00038; // wave speed
+const WAVES = 1.85; // waves across the band
+const LENS = 190; // pointer falloff radius in px
 
-/** The wordmark band. Bone slits on charcoal, wide and slow. */
-export const DARK: SlitscanConfig = {
-  cw: 9,
-  gap: 2.6,
-  speed: 0.00046,
-  waves: 2.35,
-  lens: 210,
-  baseAmp: 26,
-  baseLen: 46,
-  bone: [242, 239, 233],
-  alphaBase: 0.055,
-  alphaHeat: 0.2,
-};
-
-/** The hero's bottom scan strip. Warmer, tighter, more opaque on paper. */
-export const LIGHT: SlitscanConfig = {
-  cw: 8,
-  gap: 2.4,
-  speed: 0.00038,
-  waves: 1.85,
-  lens: 190,
-  baseAmp: 13,
-  baseLen: 30,
-  bone: [175, 167, 148],
-  alphaBase: 0.14,
-  alphaHeat: 0.42,
-};
-
-const SIGNAL_R = 255;
-const SIGNAL_G = 200;
+/** Cold colour. Mixes toward SIGNAL as a column heats up. */
+const BONE_R = 150;
+const BONE_G = 145;
+const BONE_B = 127;
+const SIGNAL_R = 233;
+const SIGNAL_G = 179;
 const SIGNAL_B = 0;
 
-export function mountSlitscan(canvas: HTMLCanvasElement, cfg: SlitscanConfig): () => void {
+export function mountSlitscan(canvas: HTMLCanvasElement): () => void {
   const ctx = canvas.getContext("2d", { alpha: true });
   if (!ctx) return () => {};
 
   const reduceQuery = window.matchMedia?.("(prefers-reduced-motion: reduce)");
 
+  /** Per-band intensity multiplier on the alpha. */
+  const K = Number.parseFloat(canvas.dataset.intensity ?? "1") || 1;
+
   let W = 0;
   let H = 0;
   let dpr = 1;
+  let baseAmp = 15;
+  let baseLen = 32;
 
   // Pointer state. x/y are the smoothed values that get drawn; tx/ty are the
   // raw target. k is the smoothed lens strength, tk its target (1 in, 0 out).
@@ -90,8 +62,8 @@ export function mountSlitscan(canvas: HTMLCanvasElement, cfg: SlitscanConfig): (
   let mk = 0;
   let mtk = 0;
 
-  // Cached so mousemove never forces a layout. Refreshed on scroll and resize,
-  // which is the only time the canvas can move relative to the viewport.
+  // Cached so pointer moves never force a layout. Refreshed on scroll and
+  // resize, the only times the canvas moves relative to the viewport.
   let rectLeft = 0;
   let rectTop = 0;
 
@@ -105,6 +77,9 @@ export function mountSlitscan(canvas: HTMLCanvasElement, cfg: SlitscanConfig): (
     canvas.width = Math.round(W * dpr);
     canvas.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // scale the wave to the band so one engine serves both heights
+    baseAmp = Math.max(11, H * 0.115);
+    baseLen = Math.max(26, H * 0.26);
   };
 
   const onMove = (e: MouseEvent) => {
@@ -129,44 +104,38 @@ export function mountSlitscan(canvas: HTMLCanvasElement, cfg: SlitscanConfig): (
     my += (mty - my) * 0.12;
     mk += (mtk - mk) * 0.06;
 
-    const cols = Math.ceil(W / cfg.cw) + 1;
+    const cols = Math.ceil(W / CW) + 1;
     const mid = H / 2;
-    const boneR = cfg.bone[0];
-    const boneG = cfg.bone[1];
-    const boneB = cfg.bone[2];
 
     for (let i = 0; i < cols; i++) {
-      const x = i * cfg.cw;
+      const x = i * CW;
       const u = x / W;
-      const ph = t * cfg.speed - u * cfg.waves * Math.PI * 2;
+      const ph = t * SPEED - u * WAVES * Math.PI * 2;
       const w =
         Math.sin(ph) * 0.6 + Math.sin(ph * 2.13 + 1.7) * 0.26 + Math.sin(ph * 0.47 - 0.9) * 0.14;
 
-      const d = (x - mx) / cfg.lens;
+      const d = (x - mx) / LENS;
       const g = Math.exp(-d * d) * mk;
 
-      const amp = cfg.baseAmp * (1 + g * 1.75);
-      const yc = mid + w * amp + (my - mid) * g * 0.3;
-      const len = cfg.baseLen * (1 + Math.abs(w) * 0.5 + g * 1.15);
+      const amp = baseAmp * (1 + g * 1.75);
+      const len = baseLen * (1 + Math.abs(w) * 0.5 + g * 1.15);
       const heat = Math.min(1, Math.abs(w) * 0.42 + g * 0.92);
+
+      // keep every slit inside the band: no vertical clipping, ever
+      const half = len / 2;
+      const pad = 4;
+      let yc = mid + w * amp + (my - mid) * g * 0.3;
+      yc = Math.max(half + pad, Math.min(H - half - pad, yc));
 
       // Channel mix inlined: no array allocated per column, per frame.
       const mixT = Math.min(1, heat * 1.25);
-      const r = Math.round(boneR + (SIGNAL_R - boneR) * mixT);
-      const gg = Math.round(boneG + (SIGNAL_G - boneG) * mixT);
-      const b = Math.round(boneB + (SIGNAL_B - boneB) * mixT);
+      const r = Math.round(BONE_R + (SIGNAL_R - BONE_R) * mixT);
+      const gg = Math.round(BONE_G + (SIGNAL_G - BONE_G) * mixT);
+      const b = Math.round(BONE_B + (SIGNAL_B - BONE_B) * mixT);
 
       ctx.fillStyle =
-        "rgba(" +
-        r +
-        "," +
-        gg +
-        "," +
-        b +
-        "," +
-        (cfg.alphaBase + heat * cfg.alphaHeat).toFixed(3) +
-        ")";
-      ctx.fillRect(x, yc - len / 2, cfg.cw - cfg.gap, len);
+        "rgba(" + r + "," + gg + "," + b + "," + (K * (0.16 + heat * 0.44)).toFixed(3) + ")";
+      ctx.fillRect(x, yc - len / 2, CW - GAP, len);
     }
   };
 
@@ -177,7 +146,6 @@ export function mountSlitscan(canvas: HTMLCanvasElement, cfg: SlitscanConfig): (
     draw(t);
     raf = requestAnimationFrame(loop);
   };
-
   const start = () => {
     if (running) return;
     running = true;
@@ -189,19 +157,9 @@ export function mountSlitscan(canvas: HTMLCanvasElement, cfg: SlitscanConfig): (
     cancelAnimationFrame(raf);
   };
 
-  // Offscreen canvases do not animate. This costs nothing visible (the strip is
-  // not on screen) and keeps two rAF loops off the main thread during scroll.
+  // Offscreen canvases do not animate. Nothing visible changes, and it keeps
+  // two rAF loops off the main thread while the reader is elsewhere.
   let io: IntersectionObserver | null = null;
-
-  const teardown = () => {
-    stop();
-    io?.disconnect();
-    window.removeEventListener("mousemove", onMove);
-    window.removeEventListener("mouseleave", onLeave);
-    window.removeEventListener("resize", onResize);
-    window.removeEventListener("scroll", onScroll);
-    reduceQuery?.removeEventListener("change", onReduceChange);
-  };
 
   const onResize = () => {
     measure();
@@ -217,10 +175,20 @@ export function mountSlitscan(canvas: HTMLCanvasElement, cfg: SlitscanConfig): (
     }
   };
 
+  const teardown = () => {
+    stop();
+    io?.disconnect();
+    window.removeEventListener("mousemove", onMove);
+    window.removeEventListener("mouseleave", onLeave);
+    window.removeEventListener("resize", onResize);
+    window.removeEventListener("scroll", onScroll);
+    reduceQuery?.removeEventListener("change", onReduceChange);
+  };
+
   measure();
 
   if (reduceQuery?.matches) {
-    // One frame. No loop. Not a slower loop — no loop.
+    // One frame. No loop. Not a slower loop, no loop.
     draw(0);
     window.addEventListener("resize", onResize);
     reduceQuery.addEventListener("change", onReduceChange);
@@ -251,10 +219,9 @@ export function mountSlitscan(canvas: HTMLCanvasElement, cfg: SlitscanConfig): (
   return teardown;
 }
 
-/** Wires every [data-slitscan] canvas on the page to its preset. */
+/** Wires every [data-slitscan] canvas on the page. */
 export function initSlitscans(): void {
-  const nodes = document.querySelectorAll<HTMLCanvasElement>("canvas[data-slitscan]");
-  for (const cv of nodes) {
-    mountSlitscan(cv, cv.dataset.slitscan === "dark" ? DARK : LIGHT);
+  for (const cv of document.querySelectorAll<HTMLCanvasElement>("canvas[data-slitscan]")) {
+    mountSlitscan(cv);
   }
 }

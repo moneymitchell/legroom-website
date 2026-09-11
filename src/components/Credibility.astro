@@ -3,14 +3,19 @@ import Underline from "./ui/Underline.astro";
 import { site } from "@/content/site";
 
 /**
- * Credibility. 498px tall at 1440, on Manila, continuing the band the
- * Breakdown opened. Four client results in a hard-ruled grid, each with its
- * logo ghosted behind it.
+ * Credibility. 669px tall at 1440, on Manila, continuing the band the
+ * Breakdown opened.
  *
- * THE GHOST WIDTHS ARE PER-LOGO (168/210/150/160%). The four source files
- * differ in aspect ratio by about 5x: one shared value makes GradMasters
- * unreadable and EL1 invisible. The numbers come from site.ts, measured
- * against the reference. Do not normalise them.
+ * R2 changes: the three one-word chips became three real selling points as a
+ * bordered list, pushed to the bottom of the left column so its last rule lines
+ * up with the bottom of the client table. The sentence under the table is gone
+ * and the table grew into the space. Each client result now centres vertically
+ * in its box: mark at the top, result in the middle, company at the bottom.
+ *
+ * THE GHOST WIDTHS ARE PER-LOGO (140/172/126/134%). The four source files
+ * differ in aspect ratio by about 5x, so one shared value makes GradMasters
+ * unreadable and EL1 invisible. The numbers come from site.ts, re-measured for
+ * R2. Do not normalise them.
  */
 const { credibility } = site;
 ---
@@ -18,7 +23,7 @@ const { credibility } = site;
 <section class="band" aria-labelledby="cred-title">
   <div class="wrap">
     <div class="cg">
-      <div>
+      <div class="col">
         <p class="eyebrow">{credibility.eyebrow}</p>
         <h2 id="cred-title">
           {credibility.headlineBefore}<br />
@@ -26,19 +31,31 @@ const { credibility } = site;
           >{credibility.headlineTail}
         </h2>
         <p class="body">{credibility.body}</p>
-        <div class="facts">
+
+        <ul class="sell">
           {
-            credibility.facts.map((f) => (
-              <span class="fact">
-                <b>{f.bold}</b>
-                {f.rest}
-              </span>
+            credibility.selling.map((s) => (
+              <li>
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                  <path
+                    d="M1.5 7 L5 10.5 L11.5 2.5"
+                    stroke="#FFC800"
+                    stroke-width="2.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                <div>
+                  <b>{s.title}</b>
+                  <i>{s.body}</i>
+                </div>
+              </li>
             ))
           }
-        </div>
+        </ul>
       </div>
 
-      <div>
+      <div class="colr">
         <p class="eyebrow work-eyebrow">{credibility.workEyebrow}</p>
         <ul class="work">
           {
@@ -54,7 +71,13 @@ const { credibility } = site;
                   decoding="async"
                 />
                 <div class="mark">
-                  <img src={`/logos/logo-${w.logo}.svg`} alt={w.logoAlt} style={w.logoStyle} loading="lazy" decoding="async" />
+                  <img
+                    src={`/logos/logo-${w.logo}.svg`}
+                    alt={w.logoAlt}
+                    style={w.logoStyle}
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
                 <p class="res">{w.result}</p>
                 <p class="qual">{w.qualifier}</p>
@@ -66,7 +89,6 @@ const { credibility } = site;
             ))
           }
         </ul>
-        <p class="small foot">{credibility.footnote}</p>
       </div>
     </div>
   </div>
@@ -77,11 +99,20 @@ const { credibility } = site;
     background: var(--paper-2);
     padding: 76px 0 68px;
   }
+  /* stretch, not start: the two columns have to end level */
   .cg {
     display: grid;
     grid-template-columns: 404px 1fr;
     gap: 74px;
-    align-items: start;
+    align-items: stretch;
+  }
+  .col,
+  .colr {
+    display: flex;
+    flex-direction: column;
+  }
+  .colr .work {
+    flex: 1;
   }
   h2 {
     font-size: var(--fs-h2);
@@ -90,31 +121,58 @@ const { credibility } = site;
   }
   .body {
     margin-top: 22px;
-    max-width: 372px;
+    max-width: 382px;
   }
-  .facts {
+
+  /* --- selling points ----------------------------------------------------- */
+  /* margin-top:auto pushes the list to the bottom of the column so its last
+     rule meets the bottom of the client table. */
+  .sell {
+    list-style: none;
+    margin: auto 0 0;
+    padding: 0;
+    border-top: 1px solid var(--rule);
+  }
+  .sell li {
     display: flex;
-    gap: 9px;
-    flex-wrap: wrap;
-    margin-top: 22px;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 14px 2px;
+    border-bottom: 1px solid var(--rule);
+    transition: padding-left var(--t-wipe) var(--ease);
   }
-  .fact {
-    background: var(--paper);
-    box-shadow: inset 0 0 0 1px var(--rule);
-    padding: 10px 13px;
-    font-size: 12px;
-    color: var(--ink);
-    white-space: nowrap;
+  .sell li:hover {
+    padding-left: 8px;
   }
-  .fact b {
+  .sell svg {
+    flex: none;
+    margin-top: 3px;
+  }
+  .sell b {
     font-family: var(--font-display);
     font-weight: 700;
-    letter-spacing: 0.03em;
+    font-size: 15.5px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink);
+    line-height: 1.25;
   }
+  .sell i {
+    display: block;
+    font-style: normal;
+    font-family: var(--font-body);
+    font-weight: 400;
+    font-size: 13px;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--ink-2);
+    margin-top: 4px;
+  }
+
+  /* --- client table ------------------------------------------------------- */
   .work-eyebrow {
     margin-bottom: 18px;
   }
-
   .work {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -127,7 +185,7 @@ const { credibility } = site;
   .wk {
     position: relative;
     overflow: hidden;
-    padding: 22px 18px 20px;
+    padding: 30px 18px 26px;
     display: flex;
     flex-direction: column;
     transition: background-color var(--t-card) var(--ease);
@@ -144,14 +202,14 @@ const { credibility } = site;
     top: 52%;
     transform: translate(-50%, -50%);
     max-width: none;
-    opacity: 0.4;
+    opacity: 0.34;
     pointer-events: none;
     transition:
       opacity 0.38s var(--ease),
       transform 0.5s var(--ease);
   }
   .wk:hover .ghost {
-    opacity: 0.64;
+    opacity: 0.56;
     transform: translate(-50%, -50%) scale(1.05);
   }
   .wk > *:not(.ghost) {
@@ -166,6 +224,7 @@ const { credibility } = site;
   .mark img {
     display: block;
   }
+  /* the two auto margins are what centre the result between mark and company */
   .res {
     font-family: var(--font-display);
     font-weight: 700;
@@ -173,7 +232,7 @@ const { credibility } = site;
     line-height: 1;
     letter-spacing: 0.01em;
     color: var(--ink);
-    margin-top: 20px;
+    margin-top: auto;
   }
   .qual {
     font-size: 12.5px;
@@ -202,10 +261,8 @@ const { credibility } = site;
     font-size: 10px;
     color: var(--ink-3);
   }
-  .foot {
-    margin-top: 16px;
-  }
 
+  /* --- responsive --------------------------------------------------------- */
   @media (max-width: 1279px) {
     .cg {
       grid-template-columns: 340px 1fr;
@@ -223,6 +280,10 @@ const { credibility } = site;
     .body {
       max-width: 560px;
     }
+    .sell {
+      margin-top: 30px;
+      max-width: 560px;
+    }
     .work {
       grid-template-columns: repeat(2, 1fr);
     }
@@ -236,7 +297,7 @@ const { credibility } = site;
   }
   @media (max-width: 767px) {
     .band {
-      padding: 56px 0 56px;
+      padding: 56px 0;
     }
     h2 {
       font-size: 34px;
@@ -250,6 +311,9 @@ const { credibility } = site;
     }
     .wk {
       padding: 20px 4px;
+    }
+    .res {
+      margin-top: 16px;
     }
   }
 </style>

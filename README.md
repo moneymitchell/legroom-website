@@ -128,7 +128,7 @@ If JD wants all four to pass, these are the nearest hue-preserving replacements:
 ```css
 --ink-3:       #6B6758;  /* paper 5.02:1  Manila 4.51:1 */
 --ink-2:       #6A675E;  /* paper 5.01:1  Manila 4.50:1 */
---yellow-deep: #896A00;  /* paper 4.51:1 — a visible change, it reads brown */
+--yellow-deep: #896A00;  /* paper 4.51:1, a visible change, it reads brown */
 ```
 
 `--yellow-deep` is also the button base colour and the step-number hover, where it sits on yellow and passes comfortably. Changing the token globally would alter those too; scoping the darker value to the Q&A labels alone is the smaller change.

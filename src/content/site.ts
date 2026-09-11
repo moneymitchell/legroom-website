@@ -6,8 +6,13 @@
  * nowhere else. Strings are transcribed verbatim from the approved design in
  * handoff/reference/*.html, HTML entities resolved to real characters.
  *
- * Anything wrapped in [square brackets] is a PLACEHOLDER waiting on JD. Do not
- * invent a replacement. See PLACEHOLDERS at the bottom for the full list.
+ * WRITING RULE, permanent: no em dashes. Anywhere. Use a comma, a period or a
+ * colon. tests/copy.spec.ts fails the build if one appears in any user-facing
+ * string, so this cannot drift back in. En dashes are allowed in numeric
+ * ranges only ("2-4 weeks"), which is what the design uses.
+ *
+ * Anything wrapped in [square brackets] is a PLACEHOLDER waiting on JD.
+ * See PLACEHOLDERS at the bottom.
  * ============================================================================
  */
 
@@ -15,26 +20,23 @@
 
 export type NavLink = { readonly label: string; readonly href: string };
 
-export type Step = {
-  readonly n: string;
-  readonly title: string;
-  readonly body: string;
-};
+export type Step = { readonly n: string; readonly title: string; readonly body: string };
 
 export type ReceiptRow = { readonly label: string; readonly value: string };
+
+export type SellingPoint = { readonly title: string; readonly body: string };
 
 export type ClientResult = {
   readonly slug: string;
   /** File stem in /public/logos. Expects `logo-<stem>.svg` and `logo-<stem>-ghost.svg`. */
   readonly logo: string;
-  /** Alt text for the foreground logo. */
   readonly logoAlt: string;
-  /** Sizing for the foreground logo: the reference sized some by height, some by width. */
+  /** The reference sized some logos by height and some by width. */
   readonly logoStyle: string;
   /**
-   * Ghost width, per logo. The four source files differ in aspect ratio by ~5x,
-   * so a single scale makes GradMasters unreadable and EL1 invisible. Measured
-   * per logo against the reference. Do not collapse these into one value.
+   * Ghost width, per logo. The four source files differ in aspect ratio by
+   * about 5x, so one shared value makes GradMasters unreadable and EL1 tiny.
+   * Re-measured for R2, which narrowed all four. Do not collapse them.
    */
   readonly ghostWidth: string;
   readonly result: string;
@@ -47,13 +49,14 @@ export type PromiseCard = {
   readonly figure: string;
   readonly label: string;
   readonly body: string;
-  /** Only the first card carries the sharpie sweep behind the figure. */
-  readonly swept?: boolean;
+  /** Only the first card carries the marker underline. One mark per section. */
+  readonly underlined?: boolean;
 };
 
 export type QARow = { readonly key: string; readonly value: string };
 
-export type StatRow = { readonly label: string; readonly value: string };
+/** A stat row on a founder card. `href` turns the value into a link. */
+export type StatRow = { readonly label: string; readonly value: string; readonly href?: string };
 
 export type Social = { readonly label: string; readonly href: string };
 
@@ -61,12 +64,12 @@ export type Founder = {
   readonly index: string;
   readonly photo: string;
   readonly photoAlt: string;
-  /** Rendered on two lines: given name, then family name. */
   readonly firstName: string;
   readonly lastName: string;
   readonly role: string;
   readonly school: string;
   readonly socials: readonly Social[];
+  readonly pills: readonly string[];
   readonly stats: readonly StatRow[];
   readonly bio: string;
   readonly quote: string;
@@ -80,16 +83,14 @@ export const site = {
     name: "Legroom",
     legalName: "The Legroom Company LLC",
     url: "https://legroomcompany.com",
-    title: "Legroom — We give owners their legroom back",
+    title: "Legroom, we give owners their legroom back",
     description:
-      "We find the work eating your team’s week and build the systems that do it for you. Free 45-minute business breakdown, no pitch.",
+      "We find the work eating your team's week and build the systems that do it for you. Free 45-minute business breakdown, no pitch.",
     ogImage: "/og-image.jpg",
     ogImageAlt: "Legroom. We give owners their legroom back.",
     locale: "en_US",
     region: "Washington",
-    email: "hello@legroomcompany.com",
-    /** Schema.org areaServed + the ticker line under the wordmark. */
-    servedIndustries: ["Youth sports", "Home services"],
+    email: "jd@legroomcompany.com",
     foundingYear: "2019",
   },
 
@@ -109,37 +110,33 @@ export const site = {
   /* --- 1. hero ------------------------------------------------------------ */
   hero: {
     chip: "2 spots open · September",
-    /* The headline is three parts so the sharpie highlight can wrap exactly
-       the one word. Never highlight two words. */
+    /* Three parts so the sharpie wraps exactly one word. Never two. */
     headlineBefore: "We give owners",
+    headlineLead: "their",
     headlineHighlight: "LEGROOM",
     headlineAfter: "back.",
-    headlineLead: "their",
-    sub: "We find the work eating your team’s week and build the systems that do it for you.",
+    sub: "We find the work eating your team's week and build the systems that do it for you.",
     ctaPrimary: "Book a free breakdown",
     ctaSecondary: "Send us a note",
     trust: "Operating since 2019",
-    /* The narrow-screen facts strip, from reference/08-mobile.html. It replaces
-       the trust line’s job on phones, where the credibility band is a long
-       scroll away. Desktop never shows it. */
+    /* Phones only. The credibility band is a long scroll away there. */
     mobileFacts: [
       { bold: "OPERATING SINCE 2019", rest: "" },
-      { bold: "10\u00d7 ROAS", rest: " \u00b7 EL1" },
-      { bold: "+200%", rest: " \u00b7 Savoir" },
-      { bold: "$30K saved", rest: " \u00b7 GradMasters" },
+      { bold: "10× ROAS", rest: " · EL1" },
+      { bold: "+200%", rest: " · Savoir" },
+      { bold: "$30K saved", rest: " · GradMasters" },
     ],
-    /* The measured-drawing panel. Annotations are positioned absolutely; the
-       coordinates live in Hero.astro because they are geometry, not copy. */
+    /* The measured-drawing panel. Coordinates are geometry and live in
+       Hero.astro; only the words are here. */
     figure: {
-      dimA: "A — every hour, mapped",
-      note1: "1 — Where the\nweek goes",
-      note2: "2 — What we\nautomate first",
-      dimB: "B — owner time",
-      measure: "C — legroom · what you get back",
-      figCaption: "Fig. 1 — the seat, measured",
+      dimA: "A · every hour, mapped",
+      note1: "1 · Where the\nweek goes",
+      note2: "2 · What we\nautomate first",
+      dimB: "B · owner time",
+      measure: "C · legroom, what you get back",
+      figCaption: "Fig. 1 · the seat, measured",
       slotNote: "Illustration slot · 500 × 470",
       slotNoteMobile: "Illustration slot · 350 × 280",
-      markAlt: "",
     },
   },
 
@@ -149,12 +146,12 @@ export const site = {
     headlineLines: ["We sit down,", "we do the math,", "you keep the "],
     headlineHighlight: "one page",
     headlineTail: ".",
-    lead: "Forty-five minutes on how work actually moves through your business. We size what it’s costing you, then hand you the two things worth automating first — with the hours and dollars attached.",
+    lead: "Forty-five minutes on how work actually moves through your business. We size what it is costing you, then hand you the two things worth automating first, with the hours and dollars attached.",
     steps: [
       {
         n: "01",
         title: "We sit down with you",
-        body: "One conversation. How a job gets from first call to paid, where it jams, who it lands on.",
+        body: "One conversation. How a job gets from first call to paid, where it jams, and who it lands on.",
       },
       {
         n: "02",
@@ -175,33 +172,32 @@ export const site = {
       note: "One email back from a real person. No sequence, no spam.",
       /* Inline states for the progressive-enhancement handler. */
       sending: "Sending…",
-      success: "Got it. Check your inbox — the booking link is in there.",
-      errorGeneric: "That didn’t send. Email hello@legroomcompany.com and we’ll pick it up.",
-      errorEmail: "That email address doesn’t look right.",
+      success: "Got it. Check your inbox, the booking link is in there.",
+      errorGeneric: "That did not send. Email jd@legroomcompany.com and we will pick it up.",
+      errorEmail: "That email address does not look right.",
       errorRate: "Too many tries. Give it a minute, then send again.",
     },
     receipt: {
       eyebrow: "Legroom breakdown",
       company: "Sample Co.",
-      markAlt: "",
       rows: [
         { label: "Monthly visitors", value: "4,200" },
         { label: "Leads not answered in 5 min", value: "~68%" },
         { label: "Hours on manual intake / wk", value: "11.5" },
-        { label: "Build #1 — instant lead reply", value: "2 wks" },
+        { label: "Build #1, instant lead reply", value: "2 wks" },
       ] as readonly ReceiptRow[],
       totalLabel: "Recovered / year",
       totalValue: "$61,400",
       footnote:
-        "Every figure tagged: observed, benchmark, or modeled. Nothing printed we can’t source.",
+        "Every figure tagged: observed, benchmark, or modeled. Nothing printed we cannot source.",
       caption: "The one page. Your numbers, ready to act on.",
     },
     get: {
-      eyebrow: "What you’ll get",
+      eyebrow: "What you'll get",
       items: [
         "The two automations worth building first, ranked",
         "What the manual version costs you today, in hours and dollars",
-        "A build plan and a flat price — no obligation to use it",
+        "A build plan and a flat price, with no obligation to use it",
       ],
       note: "Yours to keep whether we work together or not.",
     },
@@ -215,11 +211,22 @@ export const site = {
     headlineUnderline: "2019",
     headlineTail: ".",
     body: "Not a new agency riding a trend. Seven years of growth work, early on AI since the first models that could actually ship it, and results across four industries that had nothing in common except the same bottleneck.",
-    facts: [
-      { bold: "4 industries", rest: "" },
-      { bold: "Early to AI", rest: " · since 2022" },
-      { bold: "Founder-led", rest: " delivery" },
-    ],
+    /* R2: the three chips became three real selling points, bottom aligned
+       with the client table. */
+    selling: [
+      {
+        title: "We build it, not just connect it",
+        body: "When the system needs a real dashboard, portal or API, we build that too.",
+      },
+      {
+        title: "Founder led. No juniors.",
+        body: "You get the two of us on the work, start to finish.",
+      },
+      {
+        title: "Flat price, quoted up front",
+        body: "No hourly, no scope creep, no invoice you did not see coming.",
+      },
+    ] as readonly SellingPoint[],
     workEyebrow: "Selected work",
     work: [
       {
@@ -227,7 +234,7 @@ export const site = {
         logo: "el1",
         logoAlt: "EL1",
         logoStyle: "height:42px",
-        ghostWidth: "168%",
+        ghostWidth: "140%",
         result: "10× ROAS",
         qualifier: "in under three months",
         company: "EL1",
@@ -238,7 +245,7 @@ export const site = {
         logo: "savoir",
         logoAlt: "Salon Savoir",
         logoStyle: "width:128px",
-        ghostWidth: "210%",
+        ghostWidth: "172%",
         result: "+200%",
         qualifier: "monthly revenue",
         company: "Salon Savoir",
@@ -249,7 +256,7 @@ export const site = {
         logo: "gradmasters",
         logoAlt: "GradMasters",
         logoStyle: "height:40px",
-        ghostWidth: "150%",
+        ghostWidth: "126%",
         result: "$30K",
         qualifier: "saved in dev costs",
         company: "GradMasters",
@@ -260,59 +267,57 @@ export const site = {
         logo: "formidable",
         logoAlt: "Formidable",
         logoStyle: "height:42px",
-        ghostWidth: "160%",
+        ghostWidth: "134%",
         result: "2.5×",
         qualifier: "subscribers in under three months",
         company: "Formidable",
         vertical: "Newsletter SaaS",
       },
     ] as readonly ClientResult[],
-    footnote:
-      "Four different industries. Same job every time: find the work that shouldn’t be done by hand, and build the thing that does it.",
   },
 
   /* --- 4. the promise ----------------------------------------------------- */
   promise: {
     eyebrow: "The promise",
     headlineLines: ["You get the week back.", "We show you the receipt."],
-    lead: "Every build ships with a before-and-after. Hours in, hours out, dollars attached. If the number isn’t real, we don’t print it.",
+    lead: "Every build ships with a before and after. Hours in, hours out, dollars attached. If the number is not real, we do not print it.",
     cards: [
       {
         figure: "15+ HOURS",
-        label: "BACK PER WEEK",
-        body: "Per person, on the first process we automate. Quoting, intake, follow-up — whatever the breakdown finds first.",
-        swept: true,
+        label: "A week, back",
+        body: "Per person, on the first process we automate. That is four to six thousand a month in payroll spent doing work a system should be doing.",
+        underlined: true,
       },
       {
-        figure: "$5,000+",
-        label: "MONTHLY LABOR TARGETED",
-        body: "The cost of the manual work the system takes over. We size it before we build, from your real volume.",
+        figure: "+35%",
+        label: "Revenue, in 60 days",
+        body: "What we target once the first system is live and leads stop leaking. Your breakdown sizes it against your real volume before anyone builds anything.",
       },
       {
-        figure: "SECONDS",
-        label: "SPEED TO LEAD",
-        body: "New lead answered in seconds instead of hours. It is the single change that moves close rate the most.",
+        figure: "30 DAYS",
+        label: "To a number you can check",
+        body: "First system live and measured inside a month. You see the before and after in your own numbers, not ours.",
       },
     ] as readonly PromiseCard[],
     footnoteBefore:
-      "These are ranges from work we’ve done — not guarantees. Your breakdown replaces every one of them with ",
+      "These are ranges from work we have done, not guarantees. Your breakdown replaces every one of them with ",
     footnoteUnderline: "your numbers",
     footnoteAfter: ", pulled from your site, your volume, your market.",
   },
 
   /* --- 5. wordmark break -------------------------------------------------- */
   wordmark: {
-    ticker: ["Save time", "Make more money", "Prove it with numbers", "Keep improving it"],
+    /* A subway line: each stop lights left to right, all stay lit, then the
+       line resets. Pure CSS, eight keyframe sets. */
+    stops: ["Save time", "Make more money", "Prove it with numbers", "Keep improving it"],
     lockupAlt: "Legroom",
-    tagline: "We do your legwork.",
-    sub: "The Legroom Company · Washington · Built for youth sports and home services",
   },
 
   /* --- 6. CTA + founders -------------------------------------------------- */
   cta: {
     eyebrow: "Last thing",
     headlineLines: ["Two spots.", "Take one."],
-    lead: "We take two new builds a month so the work stays good. Start with the free breakdown — if the numbers aren’t worth your time, you’ve lost nothing but forty-five minutes.",
+    lead: "We take two new builds a month so the work stays good. Start with the free breakdown. If the numbers are not worth your time, you have lost nothing but forty-five minutes.",
     qa: [
       {
         key: "Cost",
@@ -325,7 +330,7 @@ export const site = {
       },
       {
         key: "Fit",
-        value: "Youth sports and home services. If we’re not right for you, we’ll say so.",
+        value: "We take work we can measure. If that is not what you need, we will tell you on the call.",
       },
     ] as readonly QARow[],
     ctaPrimary: "Book a free breakdown",
@@ -334,10 +339,8 @@ export const site = {
   },
 
   founders: {
-    /** Sits above the name on every card. */
-    cardEyebrow: "Who you’ll sit down with",
+    cardEyebrow: "Who you will sit down with",
     cardOrg: "The Legroom Company",
-    /** Accessible name for the scrollable deck region. */
     deckLabel: "Founder cards",
     deckHint: "Use the arrow keys or the dots to move between founders.",
     dotLabel: (n: number, name: string) => `Show card ${n}: ${name}`,
@@ -348,40 +351,48 @@ export const site = {
         photoAlt: "JD Worcester, founder of Legroom",
         firstName: "JD",
         lastName: "Worcester",
-        role: "Founder. Growth, and the systems underneath it.",
-        school: "[School]",
+        role: "Founder. Design, growth, and the systems underneath both.",
+        school: "Santa Clara Univ · BS Management",
         socials: [
-          { label: "LinkedIn", href: "#" },
-          { label: "Instagram", href: "#" },
+          { label: "LinkedIn", href: "https://www.linkedin.com/in/jdworcester/" },
+          { label: "jdworcester.com", href: "https://jdworcester.com/" },
         ],
+        pills: ["Golf", "Baking pizza", "Lifting", "Watch collecting"],
         stats: [
-          { label: "In the game since", value: "2019" },
-          { label: "Best number on the board", value: "10× ROAS" },
-          { label: "Home field", value: "Youth baseball & softball" },
+          { label: "In the game since", value: "2000" },
+          // href "#" is a placeholder: JD to supply the Dotted URL.
+          { label: "Currently building", value: "Dotted", href: "#" },
+          { label: "Superpowers", value: "Design & Growth" },
         ],
-        bio: "Seven years of growth marketing, most of it inside youth sports. Ran acquisition for EL1 to 10× ROAS, built and shipped for Monet.ai, ABT and bBow. Started building with AI the moment it could actually do the work — not when it got a logo.",
-        quote:
-          "Every owner I talk to is doing four jobs. I want to hand two of them back.",
+        bio: "Former college athlete and OpenAI beta tester. Nothing beats finding a powerful tool before the rest of the world knows it exists. Found the cheat codes so you do not have to.",
+        quote: "Every owner I talk to is doing four jobs. I want to hand three of them back.",
       },
       {
         index: "02 / 02",
         photo: "/photos/sean-photo.jpg",
-        photoAlt: "Sean, partner on delivery at Legroom",
+        photoAlt: "Sean Ajulu-Okeke, partner on delivery at Legroom",
         firstName: "Sean",
-        lastName: "[Last name]",
-        role: "Partner on delivery. Build and reliability.",
-        school: "[School]",
+        lastName: "Ajulu-Okeke",
+        role: "Partner on delivery. Build, security, and the parts that must not break.",
+        school: "Santa Clara Univ · BS Management",
+        // Both links point at JD's profiles in the approved reference. Flagged
+        // for JD rather than guessed at.
         socials: [
-          { label: "LinkedIn", href: "#" },
-          { label: "Instagram", href: "#" },
+          { label: "LinkedIn", href: "https://www.linkedin.com/in/jdworcester/" },
+          { label: "jdworcester.com", href: "https://jdworcester.com/" },
         ],
+        pills: ["Running", "Plants", "Lifting", "Traveling"],
         stats: [
-          { label: "In the game since", value: "[Year]" },
-          { label: "Best number on the board", value: "[Stat]" },
-          { label: "Home field", value: "[Focus]" },
+          { label: "In the game since", value: "1994" },
+          {
+            label: "Currently building",
+            value: "Sendmeflowers.io",
+            href: "https://sendmeflowers.io",
+          },
+          { label: "Superpowers", value: "Full stack & security" },
         ],
-        bio: "[Bio to confirm.] Builds the systems that have to keep running after we leave — integrations, data, the unglamorous parts. If it breaks at 6am on a Saturday, he’s the reason it doesn’t.",
-        quote: "[Pull quote to confirm — one line, in his own words.]",
+        bio: "Masters in software engineering and cybersecurity. Has lived and built in more countries than most people have visited. Reads the whole system before he touches any part of it, which is why the things he ships stay shipped.",
+        quote: "If it is going to break, I want to be the one who finds it.",
       },
     ] as readonly Founder[],
   },
@@ -389,24 +400,21 @@ export const site = {
   /* --- footer -------------------------------------------------------------- */
   footer: {
     logoAlt: "Legroom",
-    email: "hello@legroomcompany.com",
-    links: [
-      { label: "LinkedIn", href: "#" },
-      { label: "Instagram", href: "#" },
-    ] as readonly NavLink[],
+    email: "jd@legroomcompany.com",
+    links: [{ label: "LinkedIn", href: "https://www.linkedin.com/in/jdworcester/" }] as readonly NavLink[],
     copyright: "© 2026 The Legroom Company LLC",
   },
 
   /* --- contact page / no-JS fallback --------------------------------------- */
   contact: {
     eyebrow: "Send us a note",
-    headline: "Tell us what’s eating the week.",
-    lead: "One email back from a real person. If a breakdown makes sense we’ll send a booking link with it.",
+    headline: "Tell us what is eating the week.",
+    lead: "One email back from a real person. If a breakdown makes sense we will send a booking link with it.",
     nameLabel: "Your name",
     namePlaceholder: "Jane Rivera",
     emailLabel: "Your email",
     emailPlaceholder: "you@yourcompany.com",
-    messageLabel: "What’s going on",
+    messageLabel: "What's going on",
     messagePlaceholder: "The part of the week that keeps disappearing.",
     submit: "Send it",
     back: "Back to the top",
@@ -414,36 +422,25 @@ export const site = {
 
   thanks: {
     eyebrow: "Got it",
-    headline: "That’s in.",
-    lead: "One of us reads every note. You’ll hear back from a real person, usually same day.",
-    bookLine: "Want to skip the back-and-forth? Grab the 45 minutes now.",
+    headline: "That's in.",
+    lead: "One of us reads every note. You will hear back from a real person, usually same day.",
+    bookLine: "Want to skip the back and forth? Grab the 45 minutes now.",
     cta: "Book a free breakdown",
     back: "Back to the site",
   },
 } as const;
 
 /**
- * Still waiting on JD. Every one of these renders literally as written, in
- * brackets, so it is obvious on the page that it is unfinished. Do not
- * substitute plausible-looking content.
+ * Still waiting on JD.
  *
- *  1. [School]      — both founder cards
- *  2. [Last name]   — Sean’s surname
- *  3. [Year]        — Sean, "In the game since"
- *  4. [Stat]        — Sean, "Best number on the board"
- *  5. [Focus]       — Sean, "Home field"
- *  6. [Bio to confirm.]        — Sean’s bio, first sentence
- *  7. [Pull quote to confirm]  — Sean’s quote
- *  8. Founder + footer social hrefs are "#" until the real profile URLs exist.
- *  9. The hero illustration slot is an empty measured-drawing panel; JD is
- *     supplying a figure illustration later.
+ *  1. The "Dotted" link on JD's card is href="#".
+ *  2. Sean's LinkedIn and personal site both point at JD's URLs in the
+ *     approved reference. Ported verbatim rather than guessed at.
+ *  3. The hero illustration slot is an empty measured-drawing panel.
  */
 export const PLACEHOLDERS = [
-  "[School] on both founder cards",
-  "Sean’s last name",
-  "Sean’s year, stat, focus",
-  "Sean’s bio and pull quote",
-  "Social profile URLs (founder cards + footer)",
+  "Dotted URL on JD's founder card",
+  "Sean's own LinkedIn and site URLs",
   "Hero illustration artwork",
 ] as const;
 

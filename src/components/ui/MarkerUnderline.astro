@@ -1,0 +1,23 @@
+---
+/**
+ * The marker underline. Rides UNDER the baseline instead of overlaying the
+ * glyphs, which is the difference between this and .hl. Used once on the page,
+ * on "15+ HOURS". Geometry lives in tokens.css under .mu.
+ */
+interface Props {
+  class?: string;
+}
+const { class: className } = Astro.props;
+---
+
+<span class:list={["mu", className]}>
+  <slot />
+  <svg viewBox="0 0 300 14" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    <path
+      d="M3,9 C60,4 130,12 200,7 C245,3 275,10 297,6"
+      fill="none"
+      stroke="#FFC800"
+      stroke-width="7"
+      stroke-linecap="round"></path>
+  </svg>
+</span>

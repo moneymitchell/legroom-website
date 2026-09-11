@@ -1,10 +1,10 @@
 /* ============================================================================
    Global stylesheet. Order matters:
-   1. @font-face  — self-hosted, subset, font-display:block (no FOUT swap)
-   2. tokens.css  — the contract
-   3. @theme      — hands the SAME variables to Tailwind so utilities and
-                    hand-written CSS can never drift apart
-   4. base        — focus, motion, responsive wrapper
+   1. @font-face: self-hosted, subset, font-display:block (no FOUT swap)
+   2. tokens.css: the contract
+   3. @theme: hands the SAME variables to Tailwind so utilities and
+      hand-written CSS can never drift apart
+   4. base: focus, motion, responsive wrapper
    ========================================================================= */
 
 @font-face {
@@ -94,8 +94,9 @@ svg {
   outline: 3px solid var(--ink);
   outline-offset: 3px;
 }
-[data-theme="dark"] :focus-visible,
-.brk :focus-visible {
+/* R2 removed the charcoal band, so every surface is light and the charcoal
+   ring is correct everywhere. Kept for any future dark section. */
+[data-theme="dark"] :focus-visible {
   outline-color: var(--yellow);
 }
 .btn:focus-visible,

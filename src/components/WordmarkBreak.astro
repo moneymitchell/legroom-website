@@ -2,53 +2,68 @@
 import { site } from "@/content/site";
 
 /**
- * The wordmark break. 468px of full-bleed charcoal at 1440.
+ * The wordmark break. 387px at 1440.
  *
- * The mouse-reactive slitscan runs behind everything at z-index 0, with a
- * vignette over it that darkens the edges so the slits dissolve instead of
- * being clipped. The lockup sits on top with the yellow sharpie swipe under it.
+ * R2 turned this section inside out. It was full-bleed charcoal with a bone
+ * lockup and a tagline; it is now Manila with a charcoal lockup, the light
+ * slitscan running behind it at intensity 1.2, and no tagline at all. The
+ * brand no longer shouts here, it just signs the page.
  *
- * This section is the only place on the page where the brand shouts. Everything
- * in it is decorative except the two lines of type.
+ * ---- THE SUBWAY LINE ----
+ * The four stops light left to right in sequence, each with a yellow bar
+ * wiping in beneath it. All four stay lit, then the whole line resets and runs
+ * again on a 4.6s loop. Eight keyframe sets, pure CSS, no JavaScript.
+ *
+ * The keyframe percentages are the effect. bar2 starts at 12%, bar3 at 24%,
+ * bar4 at 36%: that 12% offset is what makes it read as one line being walked
+ * rather than four things blinking. Every bar holds until 87%, which is the
+ * pause where all four sit lit, and they all drop together at 87.5%. Change
+ * any of those numbers and it stops looking like a train.
+ *
+ * prefers-reduced-motion shows all four lit and static, which is the end state
+ * of the animation rather than an approximation of it.
  */
 const { wordmark } = site;
 ---
 
-<section class="brk" aria-labelledby="wordmark-tagline">
-  <canvas data-slitscan="dark" aria-hidden="true"></canvas>
+<section class="brk" aria-label="What the work is for">
+  <canvas data-slitscan data-intensity="1.2" aria-hidden="true"></canvas>
   <div class="vig" aria-hidden="true"></div>
 
   <p class="ticker">
     {
-      wordmark.ticker.map((t, i) => (
+      wordmark.stops.map((stop, i) => (
         <>
-          {i > 0 && <i aria-hidden="true" />}
-          <span>{t}</span>
+          {i > 0 && <i class="sep" aria-hidden="true" />}
+          <span class="stop">{stop}</span>
         </>
       ))
     }
   </p>
 
   <div class="lockwrap">
-    <img class="lock" src="/brand/lockup-bone.svg" alt={wordmark.lockupAlt} width="860" height="172" loading="lazy" decoding="async" />
+    <img
+      class="lock"
+      src="/brand/lockup-charcoal.svg"
+      alt={wordmark.lockupAlt}
+      width="860"
+      height="172"
+      loading="lazy"
+      decoding="async"
+    />
     <svg class="swipe" viewBox="0 0 700 22" preserveAspectRatio="none" aria-hidden="true">
       <path
         fill="#FFC800"
-        fill-opacity=".9"
+        fill-opacity=".92"
         d="M2,17 C120,12 300,19 470,13 C560,10 650,16 698,11 L697,3 C640,8 550,2 450,6 C300,12 130,4 4,9 Z"></path>
     </svg>
-  </div>
-
-  <div class="tagline">
-    <p class="d" id="wordmark-tagline">{wordmark.tagline}</p>
-    <p class="sub">{wordmark.sub}</p>
   </div>
 </section>
 
 <style>
   .brk {
-    background: var(--charcoal);
-    padding: 64px 0 70px;
+    background: var(--paper-2);
+    padding: 70px 0 76px;
     position: relative;
     overflow: hidden;
   }
@@ -73,60 +88,222 @@ const { wordmark } = site;
     background:
       linear-gradient(
         90deg,
-        var(--charcoal) 0%,
-        rgba(28, 28, 26, 0) 14%,
-        rgba(28, 28, 26, 0) 86%,
-        var(--charcoal) 100%
+        var(--paper-2) 0%,
+        rgba(234, 229, 218, 0) 15%,
+        rgba(234, 229, 218, 0) 85%,
+        var(--paper-2) 100%
       ),
       radial-gradient(
-        126% 104% at 50% 50%,
-        rgba(28, 28, 26, 0) 40%,
-        rgba(28, 28, 26, 0.55) 82%,
-        rgba(28, 28, 26, 0.86) 100%
+        130% 108% at 50% 50%,
+        rgba(234, 229, 218, 0) 38%,
+        rgba(234, 229, 218, 0.42) 82%,
+        rgba(234, 229, 218, 0.74) 100%
       );
   }
 
+  /* --- the subway line ---------------------------------------------------- */
   .ticker {
-    /* it is a <p>, so it would otherwise inherit the 1.62 body leading and
-       stand 1.8px taller than the band was drawn */
-    line-height: normal;
     display: flex;
-    gap: 30px;
+    gap: 0;
     justify-content: center;
     align-items: center;
-    opacity: 0.62;
     flex-wrap: wrap;
+    /* it is a <p>, so it would otherwise inherit the 1.62 body leading */
+    line-height: normal;
     padding-inline: 20px;
   }
-  .ticker span {
+  .stop {
+    position: relative;
+    padding: 0 22px 9px;
     font-family: var(--font-display);
     font-weight: 500;
-    font-size: 11px;
-    letter-spacing: 0.26em;
+    font-size: 11.5px;
+    letter-spacing: 0.24em;
     text-transform: uppercase;
-    color: var(--yellow);
+    color: var(--ink-3);
     white-space: nowrap;
   }
-  .ticker i {
-    width: 4px;
-    height: 4px;
+  .stop::after {
+    content: "";
+    position: absolute;
+    left: 22px;
+    right: 22px;
+    bottom: 0;
+    height: 3px;
     background: var(--yellow);
-    opacity: 0.55;
-    display: block;
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+  .sep {
+    width: 5px;
+    height: 5px;
+    background: var(--paper-3);
     flex: none;
+    margin-bottom: 9px;
   }
 
+  /* nth-child counts the separators too, hence 1/3/5/7 */
+  .stop:nth-child(1) {
+    animation: lit1 4.6s linear infinite;
+  }
+  .stop:nth-child(3) {
+    animation: lit2 4.6s linear infinite;
+  }
+  .stop:nth-child(5) {
+    animation: lit3 4.6s linear infinite;
+  }
+  .stop:nth-child(7) {
+    animation: lit4 4.6s linear infinite;
+  }
+  .stop:nth-child(1)::after {
+    animation: bar1 4.6s linear infinite;
+  }
+  .stop:nth-child(3)::after {
+    animation: bar2 4.6s linear infinite;
+  }
+  .stop:nth-child(5)::after {
+    animation: bar3 4.6s linear infinite;
+  }
+  .stop:nth-child(7)::after {
+    animation: bar4 4.6s linear infinite;
+  }
+
+  @keyframes bar1 {
+    0% {
+      transform: scaleX(0);
+    }
+    9%,
+    87% {
+      transform: scaleX(1);
+    }
+    87.5%,
+    100% {
+      transform: scaleX(0);
+    }
+  }
+  @keyframes bar2 {
+    0%,
+    12% {
+      transform: scaleX(0);
+    }
+    21%,
+    87% {
+      transform: scaleX(1);
+    }
+    87.5%,
+    100% {
+      transform: scaleX(0);
+    }
+  }
+  @keyframes bar3 {
+    0%,
+    24% {
+      transform: scaleX(0);
+    }
+    33%,
+    87% {
+      transform: scaleX(1);
+    }
+    87.5%,
+    100% {
+      transform: scaleX(0);
+    }
+  }
+  @keyframes bar4 {
+    0%,
+    36% {
+      transform: scaleX(0);
+    }
+    45%,
+    87% {
+      transform: scaleX(1);
+    }
+    87.5%,
+    100% {
+      transform: scaleX(0);
+    }
+  }
+  @keyframes lit1 {
+    0% {
+      color: #96917f;
+    }
+    9%,
+    87% {
+      color: #23221f;
+    }
+    87.5%,
+    100% {
+      color: #96917f;
+    }
+  }
+  @keyframes lit2 {
+    0%,
+    12% {
+      color: #96917f;
+    }
+    21%,
+    87% {
+      color: #23221f;
+    }
+    87.5%,
+    100% {
+      color: #96917f;
+    }
+  }
+  @keyframes lit3 {
+    0%,
+    24% {
+      color: #96917f;
+    }
+    33%,
+    87% {
+      color: #23221f;
+    }
+    87.5%,
+    100% {
+      color: #96917f;
+    }
+  }
+  @keyframes lit4 {
+    0%,
+    36% {
+      color: #96917f;
+    }
+    45%,
+    87% {
+      color: #23221f;
+    }
+    87.5%,
+    100% {
+      color: #96917f;
+    }
+  }
+
+  /* the end state of the loop, held still */
+  @media (prefers-reduced-motion: reduce) {
+    .stop,
+    .stop::after {
+      animation: none;
+    }
+    .stop {
+      color: var(--ink);
+    }
+    .stop::after {
+      transform: scaleX(1);
+    }
+  }
+
+  /* --- lockup -------------------------------------------------------------- */
   .lockwrap {
     position: relative;
     width: 860px;
     max-width: calc(100% - 40px);
-    margin: 0 auto;
+    margin: 44px auto 0;
   }
   .lock {
     display: block;
     width: 100%;
     height: auto;
-    margin: 40px auto 0;
   }
   .swipe {
     position: absolute;
@@ -134,22 +311,6 @@ const { wordmark } = site;
     right: 2px;
     bottom: -16px;
     height: 27px;
-  }
-
-  .tagline {
-    text-align: center;
-    margin-top: 46px;
-    padding-inline: 20px;
-  }
-  .tagline .d {
-    color: var(--paper);
-    font-size: 26px;
-    letter-spacing: 0.02em;
-  }
-  .tagline .sub {
-    color: #8e8a80;
-    margin-top: 12px;
-    font-size: 15px;
   }
 
   @media (max-width: 1023px) {
@@ -161,29 +322,21 @@ const { wordmark } = site;
     .brk {
       padding: 44px 0 52px;
     }
-    .ticker {
-      gap: 14px;
-      row-gap: 10px;
-    }
-    .ticker span {
+    .stop {
+      padding: 0 12px 8px;
       font-size: 10px;
-      letter-spacing: 0.2em;
+      letter-spacing: 0.18em;
     }
-    .lock {
+    .stop::after {
+      left: 12px;
+      right: 12px;
+    }
+    .lockwrap {
       margin-top: 30px;
     }
     .swipe {
       bottom: -8px;
       height: 14px;
-    }
-    .tagline {
-      margin-top: 32px;
-    }
-    .tagline .d {
-      font-size: 21px;
-    }
-    .tagline .sub {
-      font-size: 13px;
     }
   }
 </style>

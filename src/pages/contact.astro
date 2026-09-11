@@ -18,7 +18,7 @@ const cap = site.breakdown.capture;
 ---
 
 <Base
-  title="Send us a note — Legroom"
+  title="Send us a note, Legroom"
   description="Tell us what's eating the week. One email back from a real person."
   canonicalPath="/contact"
 >
@@ -87,8 +87,10 @@ const cap = site.breakdown.capture;
 <script>
   import { initForms } from "@/scripts/form";
   import { initAnalytics } from "@/scripts/analytics";
+  import { initPointerTilt } from "@/scripts/pointer-tilt";
   initForms(import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "");
   initAnalytics();
+  initPointerTilt();
 </script>
 
 <style>
