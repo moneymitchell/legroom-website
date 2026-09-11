@@ -450,6 +450,8 @@ test.describe("the sticky rail", () => {
           duration: getComputedStyle(el).animationDuration,
           dot: getComputedStyle(el.querySelector("i") as Element).backgroundColor,
           color: getComputedStyle(el).color,
+          dotRing: getComputedStyle(el.querySelector("i") as Element).boxShadow,
+          dotPing: getComputedStyle(el.querySelector("i") as Element, "::after").animationName,
         })),
         segs: segs.map((el) => ({
           name: getComputedStyle(el, "::after").animationName,
@@ -472,6 +474,14 @@ test.describe("the sticky rail", () => {
     // label on one animation instead of two that can drift apart.
     for (const s of wiring.stations) {
       expect(s.dot, `${s.text}: the dot is not following its label's colour`).toBe(s.color);
+      // The station dot must not pick up the global .dot in tokens.css: that
+      // one is the "spots open" pip, a yellow disc with an inset ring and a
+      // 1.9s ping. Astro's scoping raised specificity on the properties this
+      // component sets but not on the ones it does not, so the ring and the
+      // ping came through and every station wore a halo blinking against the
+      // 8s line. Renaming fixed it. This is the tripwire.
+      expect(s.dotRing, `${s.text}: the dot picked up the global yellow ring`).toBe("none");
+      expect(s.dotPing, `${s.text}: the dot is pinging on its own clock`).toBe("none");
     }
   });
 

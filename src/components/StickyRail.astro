@@ -30,10 +30,15 @@ import { site } from "@/content/site";
  * legible size, and a fixed bar costs a phone more of its viewport than the
  * copy earns back there.
  *
- * NAMING: `.railbar` and `.station`, not `.rail` and `.stop`. `.rail` is
- * already the founder-card scroll deck in Founders.astro and both the tests
- * and scripts/compare-design.mjs query it by that name from the document root.
- * Astro scopes the CSS either way; the collision would only bite in JS.
+ * NAMING: `.railbar`, `.station`, `.stationdot`. Not `.rail`, `.stop`,
+ * `.dot`, all three of which already mean something else here. `.rail` is the
+ * founder-card scroll deck, which both the tests and compare-design.mjs query
+ * from the document root. `.dot` is the pinging yellow "spots open" dot in
+ * tokens.css, and that one actually bit: Astro's scoping adds specificity to
+ * the properties this component sets, so `background: currentColor` won, but
+ * the global rule's `box-shadow` inset ring and its `::after` ping came
+ * straight through and every station wore a yellow halo blinking on a 1.9s
+ * cycle of its own, against an 8s line. Scoping is not a namespace.
  */
 const { rail } = site;
 ---
@@ -46,7 +51,7 @@ const { rail } = site;
           <>
             {i > 0 && <li class={`seg g${i}`} aria-hidden="true" />}
             <li class={`station s${i + 1}`}>
-              <i class="dot" aria-hidden="true" />
+              <i class="stationdot" aria-hidden="true" />
               <span>{stop}</span>
             </li>
           </>
@@ -109,7 +114,7 @@ const { rail } = site;
        arriving at the dot doing most of the work. */
     color: var(--ink-2);
   }
-  .dot {
+  .stationdot {
     width: 7px;
     height: 7px;
     border-radius: 50%;
