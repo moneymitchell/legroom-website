@@ -8,6 +8,10 @@ dist
 .env.*
 !.env.example
 
+# wrangler local secrets
+.dev.vars
+.dev.vars.*
+
 # test + audit output
 test-results
 playwright-report

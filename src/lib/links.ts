@@ -1,11 +1,14 @@
 /**
  * Where every CTA points.
  *
- * PUBLIC_CAL_LINK holds the Cal.com booking slug, e.g. "legroom/breakdown"
- * (or a full https:// URL). JD is creating the account now; until the variable
- * is filled in, every "Book" CTA falls back to the contact form, which is a
- * working path rather than a dead link. Fill the variable in and every button
- * on the site switches over with no code change.
+ * PUBLIC_CAL_LINK holds the Cal.com booking link, either a bare slug
+ * ("jdworcester/discovery") or the full URL. It lives in .env locally and has
+ * to be set as a build environment variable in the Cloudflare dashboard for
+ * production, because .env is not committed.
+ *
+ * The /contact fallback below is a safety net, not a mode: a test asserts that
+ * every booking CTA points at cal.com, so losing the variable fails the build
+ * instead of quietly turning four CTAs into a contact form link.
  */
 
 const raw = (import.meta.env.PUBLIC_CAL_LINK ?? "").trim();
