@@ -30,6 +30,7 @@ import { bookHref, contactHref } from "@/lib/links";
   // at build time, so the config travels inside the bundle rather than in a
   // separate <script> tag the CSP would have to allow.
   import { initSlitscans } from "@/scripts/slitscan";
+  import { initMeasureRules } from "@/scripts/measure-rule";
   import { initForms } from "@/scripts/form";
   import { initCal, tagCalLinks } from "@/scripts/cal";
   import { initAnalytics } from "@/scripts/analytics";
@@ -44,12 +45,15 @@ import { bookHref, contactHref } from "@/lib/links";
   initAnalytics();
   initPointerTilt();
 
-  // The slitscan loops are ambient texture, not content, and they are the only
+  // The canvas loops, the wordmark slitscan and the hero measure, are the only
   // continuous work on the page. Starting them once the main thread is idle
   // keeps them out of the interaction window: it costs a few hundred
   // milliseconds of an eight-second wave nobody is waiting for, and it is the
   // difference between 190ms and near-zero total blocking time.
-  const start = () => initSlitscans();
+  const start = () => {
+    initSlitscans();
+    initMeasureRules();
+  };
   if ("requestIdleCallback" in window) {
     requestIdleCallback(start, { timeout: 1500 });
   } else {

@@ -90,14 +90,17 @@ for (const sec of SECTIONS) {
   }
 
   // Masked in both images before diffing:
-  //  - the two slitscan canvases, which are animated, so the reference caught
-  //    them mid-frame and no two runs can agree
+  //  - both canvases, the wordmark slitscan and the hero measure, which are
+  //    animated, so the reference caught them mid-frame and no two runs can
+  //    agree. Selector is `canvas`, not `canvas[data-slitscan]`: R4 replaced
+  //    the hero band with a different engine and the narrower selector would
+  //    have quietly stopped masking it
   //  - the founder photos, which ship as AVIF here and were JPEG in the
   //    reference. A re-encode differs in every pixel by construction. The
   //    photos are asserted separately in tests/visual.spec.ts: they load, they
   //    are the right size, and they sit on Manila.
   const masks = [
-    ...(await page.locator("canvas[data-slitscan]").all()),
+    ...(await page.locator("canvas").all()),
     ...(await page.locator(".pic img").all()),
   ];
 
@@ -323,8 +326,8 @@ const ALLOW = {
     why: "R3: eyebrow, lead and step 1 rewritten for the 15-minute offer (was 0.397)",
   },
   "06-cta-founders": {
-    pct: 4.8,
-    why: "R3: both founder roles, Sean's bio and quote, and the whole Last thing block (was 0.411)",
+    pct: 5.2,
+    why: "R3+R4: both founder roles, Sean's bio and quote, the Last thing block, the After row (was 0.411)",
   },
   "08-mobile": {
     pct: 11.5,

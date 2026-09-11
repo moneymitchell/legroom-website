@@ -16,8 +16,11 @@ import { site } from "@/content/site";
  * The panel's annotation coordinates are geometry, not copy, so they live here
  * and the strings come from site.ts.
  *
- * The bottom edge carries the light slitscan strip, faded out at both ends so
- * it dissolves into the paper rather than stopping at a hard line.
+ * The bottom edge carries the measure: a ruler that stretches under the
+ * pointer, opening space where you point and then dimensioning it. R4 put it
+ * here in place of a second slitscan band. See scripts/measure-rule.ts. It is
+ * faded out at both ends so it dissolves into the paper rather than stopping
+ * at a hard line.
  */
 interface Props {
   bookHref: string;
@@ -134,7 +137,7 @@ const fig = hero.figure;
   </div>
 
   <div class="scanstrip" aria-hidden="true">
-    <canvas data-slitscan data-intensity="0.85" aria-hidden="true"></canvas>
+    <canvas data-measure data-intensity="1" aria-hidden="true"></canvas>
     <div class="fade"></div>
   </div>
 </header>
@@ -308,25 +311,13 @@ const fig = hero.figure;
     width: 100%;
     height: 100%;
     display: block;
+    /* The canvas takes no pointer events itself. The engine listens on the
+       window, because the effect has to answer to the cursor approaching the
+       band, not only to the cursor inside it. */
     pointer-events: none;
-    /* The slits are hard-edged rectangles of uniform length, so without this
-       the band terminates in a straight line top and bottom and reads as a
-       strip that got trimmed rather than a wave. The mask dissolves both
-       edges into the paper. Costs nothing per frame. */
-    -webkit-mask-image: linear-gradient(
-      to bottom,
-      transparent 0%,
-      #000 16%,
-      #000 84%,
-      transparent 100%
-    );
-    mask-image: linear-gradient(
-      to bottom,
-      transparent 0%,
-      #000 16%,
-      #000 84%,
-      transparent 100%
-    );
+    /* No vertical mask here. The wordmark band needs one because its slits are
+       hard-edged rectangles that end in a straight line; the rule composes its
+       own edges, and masking would eat the top of the dimension bar. */
   }
   .scanstrip .fade {
     position: absolute;
