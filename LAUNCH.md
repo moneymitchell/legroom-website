@@ -394,7 +394,7 @@ Twenty minutes. Do them on the live domain, not the workers.dev URL.
 4. **Cal.com, end to end.** Book a real slot from the site. Check the calendar invite, the reminder workflow, and then cancel it.
 5. **PageSpeed Insights** on `https://legroomcompany.com`. Field data will be empty at first; the lab numbers should land near the local ones (100 performance, LCP well under 1.5s). If performance has dropped, the usual cause is a newly added third-party script.
 6. **Rich Results Test** at search.google.com/test/rich-results. Confirm Organization, ProfessionalService, WebSite and Service are all detected with no errors.
-7. **Broken links.** `npx linkinator https://legroomcompany.com --recurse --skip "cal.com|linkedin|instagram"`. The founder and footer social links are still `#` placeholders and will flag; that is the reminder to fill them in.
+7. **Broken links.** `npx linkinator https://legroomcompany.com --recurse --skip "cal.com|linkedin|instagram"`. JD's "Currently building" link is still `href="#"` and will flag; that is the reminder to fill it in. Note that linkinator is skipped on linkedin, so it will NOT catch the wrong LinkedIn URL on Sean's card. See section 11.
 8. **Security headers.** securityheaders.com on the live URL. Expect A or A+. If CSP shows a violation, it is almost certainly a script you added in step 8 that is not in the allowlist.
 9. **The placeholders.** Read the page top to bottom and count the brackets. See below.
 
@@ -402,18 +402,21 @@ Twenty minutes. Do them on the live domain, not the workers.dev URL.
 
 ## 11. Placeholders still waiting on you
 
-These render literally, in brackets, so they are impossible to miss. All live in `src/content/site.ts`.
+Every bracketed placeholder is now filled. What is left is worse, because none
+of it looks provisional. All of it lives in `src/content/site.ts`.
+
+**Wrong data, and it does not announce itself. Fix before launch.**
+
+| What | Where | Why it matters |
+| --- | --- | --- |
+| Sean's LinkedIn button points at **JD's** LinkedIn, `linkedin.com/in/jdworcester/` | `founders.cards[1].socials` | Found while removing `jdworcester.com` from Sean's card in R3. Same defect, one line down, and this one still renders as a button. A prospect who clicks the technical founder's profile lands on the marketer's. Needs Sean's real URL; guessing one is worse than the bug. |
+| Sean's education chip reads **"Santa Clara Univ · BS Management"**, copied from JD's card | `founders.cards[1].edu` | It contradicts his own bio two inches below, which says a masters in software engineering and cybersecurity. Needs his actual school and degree. |
+
+**Still placeholder, and visibly so.**
 
 | Placeholder | Where |
 | --- | --- |
-| `[School]` | both founder cards |
-| `[Last name]` | Sean's surname |
-| `[Year]` | Sean, "In the game since" |
-| `[Stat]` | Sean, "Best number on the board" |
-| `[Focus]` | Sean, "Home field" |
-| `[Bio to confirm.]` | Sean's bio, first sentence |
-| `[Pull quote to confirm, one line, in his own words.]` | Sean's quote |
-| `href="#"` | founder social links and the two footer social links |
+| `href="#"` | JD's "Currently building → Dotted" link |
 | Hero illustration | the measured-drawing panel stands on its own until the figure artwork arrives |
 
 Nothing else on the page is provisional.
