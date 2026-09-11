@@ -1,0 +1,136 @@
+---
+import "../styles/global.css";
+import { site } from "@/content/site";
+
+/**
+ * The document shell: head, metadata, structured data, skip link.
+ *
+ * Fonts are self-hosted, subset, and preloaded for the two faces used above the
+ * fold (Oswald 700 for the headline, DM Sans 400 for the lead). font-display:block
+ * means the page never paints fallback type and then reflows, so there is no FOUT
+ * to cause layout shift. The faces are 8-12KB each and served from our own origin,
+ * so the block period is short enough not to be felt.
+ */
+interface Props {
+  title?: string;
+  description?: string;
+  /** /thanks should not be indexed. */
+  noindex?: boolean;
+  canonicalPath?: string;
+}
+const {
+  title = site.meta.title,
+  description = site.meta.description,
+  noindex = false,
+  canonicalPath = "/",
+} = Astro.props;
+
+const canonical = new URL(canonicalPath, site.meta.url).href;
+const ogImage = new URL(site.meta.ogImage, site.meta.url).href;
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${site.meta.url}/#organization`,
+      name: site.meta.name,
+      legalName: site.meta.legalName,
+      url: site.meta.url,
+      email: site.meta.email,
+      foundingDate: site.meta.foundingYear,
+      logo: { "@type": "ImageObject", url: `${site.meta.url}/brand/lockup-charcoal.svg` },
+      image: ogImage,
+      description: site.meta.description,
+      address: {
+        "@type": "PostalAddress",
+        addressRegion: site.meta.region,
+        addressCountry: "US",
+      },
+    },
+    {
+      "@type": "ProfessionalService",
+      "@id": `${site.meta.url}/#business`,
+      name: site.meta.legalName,
+      url: site.meta.url,
+      email: site.meta.email,
+      image: ogImage,
+      description: site.meta.description,
+      parentOrganization: { "@id": `${site.meta.url}/#organization` },
+      address: {
+        "@type": "PostalAddress",
+        addressRegion: site.meta.region,
+        addressCountry: "US",
+      },
+      areaServed: { "@type": "State", name: "Washington" },
+      knowsAbout: site.meta.servedIndustries,
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${site.meta.url}/#website`,
+      url: site.meta.url,
+      name: site.meta.name,
+      description: site.meta.description,
+      publisher: { "@id": `${site.meta.url}/#organization` },
+      inLanguage: "en-US",
+    },
+    {
+      "@type": "Service",
+      "@id": `${site.meta.url}/#breakdown`,
+      name: "The free business breakdown",
+      serviceType: "Business process and automation assessment",
+      provider: { "@id": `${site.meta.url}/#organization` },
+      areaServed: { "@type": "State", name: "Washington" },
+      description:
+        "A free 45-minute sit-down on how work moves through your business, with the two automations worth building first and the hours and dollars behind them.",
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "USD",
+        availability: "https://schema.org/LimitedAvailability",
+      },
+    },
+  ],
+};
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex, follow" />}
+
+    <link rel="preload" href="/fonts/Oswald-700.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/DMSans-400.woff2" as="font" type="font/woff2" crossorigin />
+
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="theme-color" content="#F4F1EA" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={site.meta.name} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content={site.meta.locale} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={site.meta.ogImageAlt} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd).replace(/</g, "\\u003c")} />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <slot />
+  </body>
+</html>

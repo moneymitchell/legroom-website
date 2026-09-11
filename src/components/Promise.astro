@@ -1,0 +1,187 @@
+---
+import Underline from "./ui/Underline.astro";
+import { site } from "@/content/site";
+
+/**
+ * The Promise. 796px at 1440, back on paper.
+ *
+ * Three outcome cards under one hard 2px rule, divided by hairlines. Only the
+ * first figure carries the sharpie sweep — one mark per section, never two.
+ * Cards tint to Manila on hover. Nothing scales, nothing fades in.
+ *
+ * The honesty footnote is not optional garnish: it is the reason the numbers
+ * above it are believable.
+ */
+const { promise } = site;
+---
+
+<section class="sec" aria-labelledby="promise-title">
+  <div class="wrap">
+    <p class="eyebrow">{promise.eyebrow}</p>
+    <h2 id="promise-title">
+      {promise.headlineLines[0]}<br />{promise.headlineLines[1]}
+    </h2>
+    <p class="lead intro">{promise.lead}</p>
+
+    <ul class="cards">
+      {
+        promise.cards.map((c) => (
+          <li class="card">
+            <p class="num">
+              {c.figure}
+              {c.swept && (
+                <svg class="sw" viewBox="0 0 320 30" preserveAspectRatio="none" aria-hidden="true">
+                  <path
+                    fill="#FFC800"
+                    fill-opacity=".5"
+                    d="M2,26 C60,22 140,27 220,23 C270,20 300,25 318,21 L317,5 C270,9 200,3 130,7 C70,11 30,5 3,9 Z"
+                  />
+                </svg>
+              )}
+            </p>
+            <h3>{c.label}</h3>
+            <p class="body">{c.body}</p>
+          </li>
+        ))
+      }
+    </ul>
+
+    <div class="foot">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+        <path
+          d="M9 2.5 V15.5 M3 5.5 L15 12.5 M15 5.5 L3 12.5"
+          stroke="#B9B2A0"
+          stroke-width="1.7"
+          stroke-linecap="round"></path>
+      </svg>
+      <p class="small">
+        {promise.footnoteBefore}<Underline strokeWidth={5} style="color:var(--ink)"
+          >{promise.footnoteUnderline}</Underline
+        >{promise.footnoteAfter}
+      </p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .sec {
+    padding: 96px 0 76px;
+    min-height: 640px;
+  }
+  h2 {
+    font-size: var(--fs-h2-promise);
+    line-height: 1;
+    margin-top: 16px;
+  }
+  .intro {
+    margin-top: 22px;
+    max-width: 600px;
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    margin: 58px 0 0;
+    padding: 0;
+    list-style: none;
+    border-top: 2px solid var(--ink);
+  }
+  .card {
+    padding: 34px 34px 38px;
+    position: relative;
+    transition: background-color 0.25s var(--ease);
+  }
+  .card + .card {
+    box-shadow: inset 1px 0 0 var(--rule);
+  }
+  .card:hover {
+    background: var(--paper-2);
+  }
+  .num {
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.005em;
+    font-size: 62px;
+    line-height: 1;
+    white-space: nowrap;
+    color: var(--ink);
+    position: relative;
+    display: inline-block;
+    z-index: 0;
+  }
+  .num .sw {
+    position: absolute;
+    left: -3%;
+    width: 106%;
+    height: 0.54em;
+    bottom: 0.1em;
+    z-index: -1;
+    mix-blend-mode: multiply;
+  }
+  .card h3 {
+    font-size: 15px;
+    letter-spacing: var(--tr-label);
+    margin-top: 18px;
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+  .card .body {
+    font-size: 15.5px;
+    margin-top: 10px;
+  }
+
+  .foot {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin-top: 40px;
+    max-width: 760px;
+  }
+  .foot svg {
+    flex: none;
+    margin-top: 2px;
+  }
+
+  @media (max-width: 1279px) {
+    h2 {
+      font-size: clamp(40px, 4.3vw, 56px);
+    }
+    .card {
+      padding: 28px 24px 32px;
+    }
+    .num {
+      font-size: clamp(40px, 4.3vw, 62px);
+    }
+  }
+  @media (max-width: 1023px) {
+    .sec {
+      min-height: 0;
+    }
+    .cards {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .card {
+      padding: 26px 0 30px;
+    }
+    .card + .card {
+      box-shadow: none;
+      border-top: 1px solid var(--rule);
+    }
+  }
+  @media (max-width: 767px) {
+    .sec {
+      padding: 64px 0 60px;
+    }
+    h2 {
+      font-size: 34px;
+    }
+    .cards {
+      margin-top: 40px;
+    }
+    .num {
+      font-size: 44px;
+    }
+  }
+</style>

@@ -1,0 +1,93 @@
+---
+import { site } from "@/content/site";
+
+/**
+ * Footer. Sits inside the CTA section's wrapper in the reference, after an
+ * 82px-margin hairline. Lockup left, contact and legal right.
+ */
+const { footer } = site;
+---
+
+<footer class="wrap">
+  <hr class="rule top" />
+  <div class="row">
+    <img
+      src="/brand/lockup-charcoal.svg"
+      alt={footer.logoAlt}
+      width="132"
+      height="26"
+      class="lock"
+      loading="lazy"
+      decoding="async"
+    />
+    <div class="links">
+      <a class="small lnk" href={`mailto:${footer.email}`}>{footer.email}</a>
+      {footer.links.map((l) => <a class="small lnk" href={l.href}>{l.label}</a>)}
+      <span class="small copy">{footer.copyright}</span>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .top {
+    margin-top: 82px;
+  }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    padding: 26px 0 40px;
+    flex-wrap: wrap;
+  }
+  .lock {
+    width: 132px;
+    height: auto;
+    display: block;
+    opacity: 0.9;
+  }
+  .links {
+    display: flex;
+    gap: 26px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  /* Desktop keeps the reference's inline metrics exactly. The 44px tap target
+     is applied on phones, where the footer stacks and there is no reference
+     layout to match. Pointer targets on desktop are not held to 44px, and WCAG
+     2.2 AA asks for 24px, which the stacked row clears either way. */
+  .lnk {
+    color: var(--ink-2);
+    text-decoration: none;
+  }
+  .lnk:hover {
+    color: var(--ink);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+  .copy {
+    color: var(--ink-2);
+  }
+
+  @media (max-width: 767px) {
+    .top {
+      margin-top: 48px;
+    }
+    .row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 22px 0 36px;
+    }
+    .links {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0;
+    }
+    .lnk {
+      display: flex;
+      align-items: center;
+      min-height: 44px;
+    }
+  }
+</style>

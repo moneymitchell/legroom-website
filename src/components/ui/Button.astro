@@ -1,0 +1,39 @@
+---
+import Arrow from "./Arrow.astro";
+
+/**
+ * The arcade button.
+ *
+ * Rest: 5px charcoal base. Hover: lifts 2px onto a 7px base, face brightens to
+ * #FFD230. Press: travels the full 5px down onto a 0px base, bottoming out like
+ * a real switch. 90ms, cubic-bezier(.2,.8,.2,1). The 2px white strip along the
+ * top edge is what makes the yellow read as a physical surface. All of it lives
+ * in tokens.css under .btn / .btn-y / .btn-g.
+ */
+interface Props {
+  variant?: "yellow" | "ghost";
+  href?: string;
+  type?: "button" | "submit";
+  arrow?: boolean;
+  class?: string;
+  id?: string;
+  "data-analytics"?: string;
+  [key: string]: unknown;
+}
+const {
+  variant = "yellow",
+  href,
+  type = "button",
+  arrow = false,
+  class: className,
+  ...rest
+} = Astro.props;
+
+const cls = ["btn", variant === "yellow" ? "btn-y" : "btn-g", className];
+const Tag = href ? "a" : "button";
+---
+
+<Tag class:list={cls} href={href} type={href ? undefined : type} {...rest}>
+  <slot />
+  {arrow && <Arrow />}
+</Tag>

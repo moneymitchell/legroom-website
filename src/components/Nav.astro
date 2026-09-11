@@ -1,0 +1,197 @@
+---
+import ArcadeButton from "./ui/ArcadeButton.astro";
+import { site } from "@/content/site";
+
+/**
+ * The top nav.
+ *
+ * Desktop: lockup left, three links + the arcade button right, 78px tall, with
+ * the hairline rule under it. Each link's yellow rule wipes left to right on
+ * hover in 220ms.
+ *
+ * Mobile (<768): lockup + a burger. Built as <details>/<summary> so the menu
+ * costs zero JavaScript and is keyboard- and screen-reader-operable for free.
+ */
+interface Props {
+  bookHref: string;
+  contactHref: string;
+}
+const { bookHref } = Astro.props;
+const { nav } = site;
+---
+
+<nav class="nav" aria-label="Primary">
+  <a class="brand" href="#top" aria-label={`${nav.logoAlt}, back to top`}>
+    <img src="/brand/lockup-charcoal.svg" alt={nav.logoAlt} width="170" height="34" />
+  </a>
+
+  <div class="lk">
+    {nav.links.map((l) => <a href={l.href}>{l.label}</a>)}
+    <ArcadeButton href={bookHref} data-cta="nav">{nav.cta}</ArcadeButton>
+  </div>
+
+  <details class="menu">
+    <summary aria-label={nav.menuOpen}>
+      <span class="burger" aria-hidden="true"><i></i><i></i><i></i></span>
+    </summary>
+    <div class="panel">
+      {nav.links.map((l) => <a href={l.href}>{l.label}</a>)}
+      <ArcadeButton href={bookHref} class="panel-cta" data-cta="nav-mobile">
+        {nav.cta}
+      </ArcadeButton>
+    </div>
+  </details>
+</nav>
+<hr class="rule" />
+
+<style>
+  .nav {
+    height: 78px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+  }
+  .brand img {
+    width: 170px;
+    height: auto;
+    display: block;
+  }
+
+  .lk {
+    display: flex;
+    gap: 34px;
+    align-items: center;
+  }
+  .lk a:not(.navbtn) {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink-2);
+    text-decoration: none;
+    position: relative;
+    padding: 6px 0;
+    /* keeps the 44px target without changing the 31px visual box */
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+  .lk a:not(.navbtn):hover {
+    color: var(--ink);
+  }
+  /* the yellow rule wipes left to right under the word */
+  .lk a:not(.navbtn)::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 100%;
+    bottom: 8px;
+    height: 2px;
+    background: var(--yellow);
+    transition: right var(--t-wipe) var(--ease);
+  }
+  .lk a:not(.navbtn):hover::after,
+  .lk a:not(.navbtn):focus-visible::after {
+    right: 0;
+  }
+
+  /* --- mobile disclosure ------------------------------------------------- */
+  .menu {
+    display: none;
+    position: relative;
+  }
+  .menu summary {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    margin-right: -11px;
+    cursor: pointer;
+  }
+  .menu summary::-webkit-details-marker {
+    display: none;
+  }
+  .burger {
+    width: 26px;
+    height: 14px;
+    position: relative;
+    display: block;
+  }
+  .burger i {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--ink);
+  }
+  .burger i:nth-child(1) {
+    top: 0;
+  }
+  .burger i:nth-child(2) {
+    top: 6px;
+    right: 8px;
+  }
+  .burger i:nth-child(3) {
+    top: 12px;
+  }
+  .menu[open] .burger i:nth-child(2) {
+    right: 0;
+  }
+
+  .panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    z-index: 30;
+    min-width: 232px;
+    display: flex;
+    flex-direction: column;
+    background: var(--paper);
+    box-shadow:
+      inset 0 0 0 1px var(--rule),
+      0 14px 30px rgba(28, 28, 26, 0.14);
+    padding: 8px;
+  }
+  .panel a:not(.navbtn) {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink);
+    text-decoration: none;
+    padding: 0 12px;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+  }
+  .panel a:not(.navbtn):hover {
+    background: var(--paper-2);
+  }
+  .panel :global(.panel-cta) {
+    margin-top: 8px;
+    justify-content: center;
+  }
+
+  @media (max-width: 900px) {
+    .lk {
+      gap: 24px;
+    }
+  }
+  @media (max-width: 767px) {
+    .nav {
+      height: 62px;
+    }
+    .brand img {
+      width: 126px;
+    }
+    .lk {
+      display: none;
+    }
+    .menu {
+      display: block;
+    }
+  }
+</style>

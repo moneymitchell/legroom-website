@@ -1,0 +1,20 @@
+---
+/**
+ * The "2 spots open" chip. The ping on its dot is the only thing on the page
+ * that moves without being asked to. Reduced motion stops it (global.css).
+ */
+interface Props {
+  /** `small` is the compact variant used under the email capture. */
+  size?: "default" | "small";
+  class?: string;
+  style?: string;
+}
+const { size = "default", class: className, style } = Astro.props;
+const chipStyle =
+  size === "small" ? `padding:5px 11px 5px 9px;font-size:10.5px;${style ?? ""}` : style;
+const dotStyle = size === "small" ? "width:7px;height:7px" : undefined;
+---
+
+<span class:list={["chip", className]} style={chipStyle}>
+  <span class="dot" style={dotStyle} aria-hidden="true"></span><slot />
+</span>

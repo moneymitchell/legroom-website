@@ -1,0 +1,37 @@
+---
+/**
+ * The sharpie highlight: an SVG painted BEHIND the text.
+ *
+ * Not a background-color, and never two words. The wrapping span carries
+ * z-index:0 to open a stacking context; without it the z-index:-1 SVG paints
+ * behind the section background and vanishes entirely. Geometry lives in
+ * tokens.css (.hl / .hl > svg) so every instance is identical.
+ *
+ * `tail` adds the third, deeper stroke at the right end. The hero uses it; the
+ * breakdown and mobile headlines do not.
+ */
+interface Props {
+  tail?: boolean;
+  class?: string;
+}
+const { tail = false, class: className } = Astro.props;
+---
+
+<span class:list={["hl", className]}>
+  <slot />
+  <svg viewBox="0 0 320 60" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    <path
+      fill="#FFC800"
+      fill-opacity=".55"
+      d="M3,53 C40,48 90,51 135,47 C180,43 240,49 300,42 L317,40 L316,7 C260,12 200,5 150,10 C100,15 55,7 6,13 Z"></path>
+    <path
+      fill="#FFC800"
+      fill-opacity=".42"
+      d="M2,49 C30,46 60,48 92,45 L96,12 C62,14 30,10 4,16 Z"></path>
+    {
+      tail && (
+        <path fill="#E9B300" fill-opacity=".20" d="M294,42 L317,39 L316,7 L295,10 Z" />
+      )
+    }
+  </svg>
+</span>

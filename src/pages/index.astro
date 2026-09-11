@@ -1,0 +1,46 @@
+---
+import Base from "@/layouts/Base.astro";
+import Hero from "@/components/Hero.astro";
+import Breakdown from "@/components/Breakdown.astro";
+import Credibility from "@/components/Credibility.astro";
+import PromiseSection from "@/components/Promise.astro";
+import WordmarkBreak from "@/components/WordmarkBreak.astro";
+import Founders from "@/components/Founders.astro";
+import Footer from "@/components/Footer.astro";
+import { bookHref, contactHref, calSlug } from "@/lib/links";
+
+const turnstileKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
+---
+
+<Base>
+  <Hero bookHref={bookHref} contactHref={contactHref} />
+  <main id="main">
+    <Breakdown />
+    <Credibility />
+    <PromiseSection />
+    <WordmarkBreak />
+    <Founders bookHref={bookHref} contactHref={contactHref} />
+  </main>
+  <Footer />
+</Base>
+
+<script define:vars={{ calSlug, turnstileKey }}>
+  // Tag the booking CTAs so the Cal loader can find them without a second pass.
+  if (calSlug) {
+    for (const a of document.querySelectorAll('a[href^="https://cal.com/"]')) {
+      a.setAttribute("data-cal-link", calSlug);
+    }
+  }
+  window.__LEGROOM__ = { calSlug, turnstileKey };
+</script>
+
+<script>
+  import { initSlitscans } from "@/scripts/slitscan";
+  import { initForms } from "@/scripts/form";
+  import { initCal } from "@/scripts/cal";
+
+  const cfg = window.__LEGROOM__ ?? { calSlug: "", turnstileKey: "" };
+  initSlitscans();
+  initForms(cfg.turnstileKey);
+  initCal(cfg.calSlug);
+</script>

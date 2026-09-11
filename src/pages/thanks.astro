@@ -1,0 +1,68 @@
+---
+import Base from "@/layouts/Base.astro";
+import Button from "@/components/ui/Button.astro";
+import Footer from "@/components/Footer.astro";
+import Chip from "@/components/ui/Chip.astro";
+import { site } from "@/content/site";
+import { bookHref } from "@/lib/links";
+
+/** Where a no-JS submission lands. Not indexed. */
+const t = site.thanks;
+---
+
+<Base
+  title="Thanks — Legroom"
+  description="We got your note. One of us reads every one."
+  canonicalPath="/thanks"
+  noindex
+>
+  <main id="main" class="page">
+    <div class="wrap">
+      <Chip>{t.eyebrow}</Chip>
+      <h1>{t.headline}</h1>
+      <p class="lead intro">{t.lead}</p>
+      <p class="book">{t.bookLine}</p>
+      <div class="cta">
+        <Button variant="yellow" href={bookHref} arrow>{t.cta}</Button>
+        <Button variant="ghost" href="/">{t.back}</Button>
+      </div>
+    </div>
+  </main>
+  <Footer />
+</Base>
+
+<style>
+  .page {
+    padding: 88px 0 64px;
+    min-height: 70vh;
+  }
+  h1 {
+    font-size: clamp(44px, 6vw, 76px);
+    margin-top: 22px;
+  }
+  .intro {
+    margin-top: 22px;
+    max-width: 520px;
+  }
+  .book {
+    margin-top: 30px;
+    max-width: 520px;
+  }
+  .cta {
+    display: flex;
+    gap: 16px;
+    margin-top: 26px;
+    flex-wrap: wrap;
+  }
+  @media (max-width: 767px) {
+    .page {
+      padding: 56px 0 48px;
+    }
+    .cta {
+      flex-direction: column;
+    }
+    .cta :global(.btn) {
+      justify-content: center;
+    }
+  }
+</style>

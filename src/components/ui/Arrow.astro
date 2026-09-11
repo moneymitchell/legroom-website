@@ -1,0 +1,14 @@
+---
+/** The button arrow. Nudges 4px right on parent hover (see .btn:hover .arw). */
+interface Props { stroke?: string }
+const { stroke = "#1C1C1A" } = Astro.props;
+---
+
+<svg class="arw" width="16" height="12" viewBox="0 0 16 12" fill="none" aria-hidden="true" focusable="false">
+  <path
+    d="M1 6h13M9.5 1.5 14.5 6l-5 4.5"
+    stroke={stroke}
+    stroke-width="2.1"
+    stroke-linecap="round"
+    stroke-linejoin="round"></path>
+</svg>

@@ -1,0 +1,25 @@
+---
+/**
+ * The sharpie underline. For the one claim per section you want re-read.
+ * Sits in front of the text, unlike the highlight.
+ */
+interface Props {
+  /** 6 in headlines, 5 in the smaller promise footnote. */
+  strokeWidth?: number;
+  class?: string;
+  style?: string;
+}
+const { strokeWidth = 6, class: className, style } = Astro.props;
+---
+
+<span class:list={["ul", className]} style={style}>
+  <slot />
+  <svg viewBox="0 0 120 14" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    <path
+      d="M3,9 C34,4 66,11 92,6 C104,3 113,8 117,5"
+      fill="none"
+      stroke="#FFC800"
+      stroke-width={strokeWidth}
+      stroke-linecap="round"></path>
+  </svg>
+</span>

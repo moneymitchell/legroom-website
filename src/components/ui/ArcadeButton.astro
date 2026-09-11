@@ -1,0 +1,53 @@
+---
+/**
+ * The compact nav button. Same physics as the main arcade button, scaled down:
+ * 3px base at rest, 5px on a 2px lift, 0px on a 3px press.
+ *
+ * NOTE ON FIDELITY: the reference HTML declares `.navbtn{padding:13px 30px;
+ * color:var(--charcoal)}` but renders neither, because `.nav a` (specificity
+ * 0,1,1) beats `.navbtn` (0,1,0) and overrides both. The reference therefore
+ * paints an 83x33 button with grey #6B675E text. Confirmed with JD on
+ * 2026-09-10: the written spec wins, so this component carries its own class
+ * and is not a descendant selector target. The nav region is masked in the
+ * visual-regression baseline for that reason.
+ */
+interface Props {
+  href: string;
+  class?: string;
+  [key: string]: unknown;
+}
+const { href, class: className, ...rest } = Astro.props;
+---
+
+<a class:list={["navbtn", className]} href={href} {...rest}><slot /></a>
+
+<style>
+  .navbtn {
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-size: 13px;
+    /* the declared intent, now actually applied */
+    padding: 13px 30px;
+    background: var(--yellow);
+    color: var(--charcoal);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    box-shadow: 0 3px 0 0 var(--ink);
+    transition:
+      transform var(--t-press) var(--ease),
+      box-shadow var(--t-press) var(--ease),
+      background-color var(--t-tint) var(--ease);
+  }
+  .navbtn:hover {
+    background: var(--yellow-lift);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 0 0 var(--ink);
+  }
+  .navbtn:active {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 0 var(--ink);
+  }
+</style>

@@ -1,0 +1,357 @@
+---
+import Highlight from "../components/ui/Highlight.astro";
+import EmailCapture from "../components/ui/EmailCapture.astro";
+import { site } from "@/content/site";
+
+/**
+ * The Breakdown — the offer. 1055px tall at 1440, on Manila.
+ *
+ * Left: the pitch, three numbered steps, the email capture. Right: the receipt
+ * card (rotated -1.4deg, with its own offset paper behind it and a strip of
+ * yellow tape over the top edge) and the "What you'll get" box.
+ *
+ * The receipt untwists to -0.4deg and lifts 4px on hover over 300ms. The step
+ * rows step 10px right and their numeral turns yellow-deep on hover.
+ */
+const { breakdown } = site;
+const r = breakdown.receipt;
+---
+
+<section class="sec" id="breakdown" aria-labelledby="breakdown-title">
+  <div class="wrap">
+    <div class="tg">
+      <div>
+        <p class="eyebrow">{breakdown.eyebrow}</p>
+
+        <h2 id="breakdown-title">
+          {breakdown.headlineLines[0]}<br />
+          {breakdown.headlineLines[1]}<br />
+          {breakdown.headlineLines[2]}<Highlight>{breakdown.headlineHighlight}</Highlight
+          >{breakdown.headlineTail}
+        </h2>
+
+        <p class="lead intro">{breakdown.lead}</p>
+
+        <div class="steps" id="how-it-works">
+          {
+            breakdown.steps.map((s) => (
+              <div class="step">
+                <div class="stepn" aria-hidden="true">
+                  {s.n}
+                </div>
+                <div>
+                  <h3>{s.title}</h3>
+                  <p>{s.body}</p>
+                </div>
+              </div>
+            ))
+          }
+        </div>
+
+        <EmailCapture source="breakdown" />
+      </div>
+
+      <div class="right">
+        <article class="sheet" aria-label="Sample breakdown, one page">
+          <div class="tape" aria-hidden="true"></div>
+          <div class="sh-top">
+            <div>
+              <p class="eyebrow sh-eyebrow">{r.eyebrow}</p>
+              <div class="d sh-co">{r.company}</div>
+            </div>
+            <img src="/brand/mark-charcoal.svg" alt="" width="48" height="38" class="sh-mark" />
+          </div>
+
+          {
+            r.rows.map((row) => (
+              <div class="sh-row">
+                <span class="l">{row.label}</span>
+                <span class="v">{row.value}</span>
+              </div>
+            ))
+          }
+
+          <div class="sh-big">
+            <span class="l">{r.totalLabel}</span>
+            <span class="v">{r.totalValue}</span>
+          </div>
+          <p class="small sh-note">{r.footnote}</p>
+        </article>
+
+        <p class="small sh-caption">{r.caption}</p>
+
+        <div class="get">
+          <p class="eyebrow">{breakdown.get.eyebrow}</p>
+          <ul>
+            {
+              breakdown.get.items.map((item) => (
+                <li>
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                    <path
+                      d="M1.5 7 L5 10.5 L11.5 2.5"
+                      stroke="#E9B300"
+                      stroke-width="2.4"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                  {item}
+                </li>
+              ))
+            }
+          </ul>
+          <p class="small get-note">{breakdown.get.note}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .sec {
+    background: var(--paper-2);
+    padding: 92px 0 96px;
+    position: relative;
+  }
+  .tg {
+    display: grid;
+    grid-template-columns: 1fr 520px;
+    gap: 80px;
+    align-items: start;
+  }
+  h2 {
+    font-size: var(--fs-h2);
+    line-height: 1.04;
+    margin-top: 16px;
+  }
+  .intro {
+    margin-top: 22px;
+    max-width: 520px;
+  }
+
+  /* --- steps -------------------------------------------------------------- */
+  .steps {
+    margin-top: 40px;
+    border-top: 1px solid var(--rule);
+    scroll-margin-top: 24px;
+  }
+  .step {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    gap: 22px;
+    padding: 22px 0;
+    border-bottom: 1px solid var(--rule);
+    transition: padding-left var(--t-wipe) var(--ease);
+  }
+  .step:hover {
+    padding-left: 10px;
+  }
+  .stepn {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 28px;
+    color: var(--ink-3);
+    line-height: 1;
+    transition: color var(--t-wipe) var(--ease);
+  }
+  .step:hover .stepn {
+    color: var(--yellow-deep);
+  }
+  .step h3 {
+    font-size: 19px;
+    letter-spacing: 0.05em;
+  }
+  .step p {
+    font-size: 15.5px;
+    margin-top: 7px;
+    max-width: 440px;
+  }
+
+  /* --- the receipt -------------------------------------------------------- */
+  .right {
+    padding-top: 44px;
+  }
+  .sheet {
+    position: relative;
+    transform: rotate(-1.4deg);
+    background: var(--paper);
+    box-shadow:
+      0 2px 0 0 var(--paper-3),
+      0 18px 40px rgba(28, 28, 26, 0.13);
+    padding: 34px 34px 30px;
+    transition:
+      transform var(--t-card) var(--ease),
+      box-shadow var(--t-card) var(--ease);
+  }
+  .sheet:hover {
+    transform: rotate(-0.4deg) translateY(-4px);
+    box-shadow:
+      0 2px 0 0 var(--paper-3),
+      0 26px 54px rgba(28, 28, 26, 0.18);
+  }
+  /* the second sheet, offset behind */
+  .sheet::before {
+    content: "";
+    position: absolute;
+    left: -8px;
+    top: -8px;
+    right: 8px;
+    bottom: 8px;
+    background: var(--paper);
+    box-shadow: inset 0 0 0 1px var(--rule);
+    z-index: -1;
+    transform: rotate(1.6deg);
+  }
+  .tape {
+    position: absolute;
+    top: -16px;
+    left: 50%;
+    margin-left: -52px;
+    width: 104px;
+    height: 28px;
+    background: rgba(255, 200, 0, 0.55);
+    transform: rotate(-2.5deg);
+    box-shadow: 0 1px 0 rgba(28, 28, 26, 0.08);
+  }
+  .sh-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 12px;
+  }
+  .sh-eyebrow {
+    color: var(--ink-2);
+  }
+  .sh-co {
+    font-size: 24px;
+    margin-top: 6px;
+  }
+  .sh-mark {
+    width: 48px;
+    height: auto;
+    opacity: 0.85;
+  }
+  .sh-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    padding: 11px 0;
+    border-bottom: 1px dashed var(--rule);
+  }
+  .sh-row .l {
+    font-size: 13.5px;
+    color: var(--ink-2);
+  }
+  .sh-row .v {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 19px;
+    letter-spacing: 0.02em;
+  }
+  .sh-big {
+    margin-top: 16px;
+    background: var(--yellow);
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+  }
+  .sh-big .l {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--charcoal);
+  }
+  .sh-big .v {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 30px;
+    color: var(--charcoal);
+  }
+  .sh-note {
+    margin-top: 14px;
+    font-size: 11.5px;
+  }
+  .sh-caption {
+    margin-top: 26px;
+    text-align: center;
+  }
+
+  /* --- what you'll get ---------------------------------------------------- */
+  .get {
+    margin-top: 34px;
+    background: var(--paper);
+    box-shadow: inset 0 0 0 1px var(--rule);
+    padding: 24px 26px 22px;
+  }
+  .get ul {
+    list-style: none;
+    margin: 14px 0 0;
+    padding: 0;
+  }
+  .get li {
+    display: flex;
+    gap: 11px;
+    align-items: flex-start;
+    padding: 8px 0;
+    font-size: 14.5px;
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  .get li svg {
+    flex: none;
+    margin-top: 4px;
+  }
+  .get-note {
+    margin-top: 14px;
+  }
+
+  /* --- responsive --------------------------------------------------------- */
+  @media (max-width: 1279px) {
+    .tg {
+      grid-template-columns: minmax(0, 1fr) 440px;
+      gap: 52px;
+    }
+    h2 {
+      font-size: clamp(38px, 3.9vw, 50px);
+    }
+  }
+  @media (max-width: 1023px) {
+    .tg {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0;
+    }
+    .right {
+      padding-top: 64px;
+      max-width: 560px;
+    }
+  }
+  @media (max-width: 767px) {
+    .sec {
+      padding: 64px 0 68px;
+    }
+    h2 {
+      font-size: 34px;
+    }
+    .intro {
+      font-size: 17px;
+    }
+    .step {
+      grid-template-columns: 44px 1fr;
+      gap: 16px;
+    }
+    .stepn {
+      font-size: 22px;
+    }
+    .sheet {
+      padding: 26px 22px 24px;
+    }
+    .sh-big .v {
+      font-size: 26px;
+    }
+  }
+</style>

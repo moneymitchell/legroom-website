@@ -1,0 +1,204 @@
+---
+import Base from "@/layouts/Base.astro";
+import Button from "@/components/ui/Button.astro";
+import Footer from "@/components/Footer.astro";
+import { site } from "@/content/site";
+import { bookHref } from "@/lib/links";
+
+/**
+ * "Send us a note".
+ *
+ * A separate page rather than a seventh section: the approved design is six
+ * sections and a form does not belong in any of them. Same shell, same tokens,
+ * no new visual language. Posts to the same /api/lead endpoint as the email
+ * capture and works with scripting disabled.
+ */
+const c = site.contact;
+const cap = site.breakdown.capture;
+const turnstileKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
+---
+
+<Base
+  title="Send us a note — Legroom"
+  description="Tell us what's eating the week. One email back from a real person."
+  canonicalPath="/contact"
+>
+  <main id="main" class="page">
+    <div class="wrap">
+      <a class="back" href="/">← {site.meta.name}</a>
+      <p class="eyebrow">{c.eyebrow}</p>
+      <h1>{c.headline}</h1>
+      <p class="lead intro">{c.lead}</p>
+
+      <form
+        class="form"
+        method="POST"
+        action="/api/lead"
+        data-lead-form
+        data-source="contact"
+        data-msg-sending={cap.sending}
+        data-msg-success={cap.success}
+        data-msg-error={cap.errorGeneric}
+        data-msg-error-email={cap.errorEmail}
+        data-msg-error-rate={cap.errorRate}
+      >
+        <input type="hidden" name="source" value="contact" />
+
+        <div class="field">
+          <label for="name">{c.nameLabel}</label>
+          <input id="name" name="name" type="text" autocomplete="name" placeholder={c.namePlaceholder} />
+        </div>
+
+        <div class="field">
+          <label for="email">{c.emailLabel}</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            autocomplete="email"
+            placeholder={c.emailPlaceholder}
+          />
+        </div>
+
+        <div class="field">
+          <label for="message">{c.messageLabel}</label>
+          <textarea id="message" name="message" rows="6" placeholder={c.messagePlaceholder}></textarea>
+        </div>
+
+        <div class="hp" aria-hidden="true">
+          <label for="company">Company (leave blank)</label>
+          <input id="company" type="text" name="company" tabindex="-1" autocomplete="off" />
+        </div>
+        <div class="cf-turnstile" data-turnstile></div>
+
+        <Button variant="yellow" type="submit" arrow class="submit">{c.submit}</Button>
+      </form>
+
+      <p class="status" data-lead-status role="status" aria-live="polite"></p>
+
+      <p class="small alt">
+        Prefer to book straight in? <a href={bookHref}>Take the 45 minutes.</a>
+      </p>
+    </div>
+  </main>
+  <Footer />
+</Base>
+
+<script define:vars={{ turnstileKey }}>
+  window.__LEGROOM__ = { calSlug: "", turnstileKey };
+</script>
+<script>
+  import { initForms } from "@/scripts/form";
+  initForms(window.__LEGROOM__?.turnstileKey ?? "");
+</script>
+
+<style>
+  .page {
+    padding: 56px 0 40px;
+    min-height: 70vh;
+  }
+  .back {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    margin-bottom: 18px;
+  }
+  .back:hover {
+    color: var(--ink);
+  }
+  h1 {
+    font-size: clamp(36px, 4.4vw, 56px);
+    margin-top: 16px;
+  }
+  .intro {
+    margin-top: 20px;
+    max-width: 520px;
+  }
+  .form {
+    margin-top: 40px;
+    max-width: 560px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .field label {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: var(--tr-eyebrow);
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+  .field input,
+  .field textarea {
+    border: 0;
+    background: var(--paper);
+    box-shadow: inset 0 0 0 2px var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    color: var(--ink);
+    padding: 14px 16px;
+    min-height: 52px;
+    width: 100%;
+  }
+  .field textarea {
+    resize: vertical;
+    line-height: 1.55;
+  }
+  .field input::placeholder,
+  .field textarea::placeholder {
+    color: var(--ink-3);
+  }
+  .field input:focus-visible,
+  .field textarea:focus-visible {
+    outline: 3px solid var(--ink);
+    outline-offset: 2px;
+  }
+  .hp {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  .form :global(.submit) {
+    align-self: flex-start;
+  }
+  .status {
+    margin-top: 16px;
+    font-size: 14px;
+    color: var(--ink);
+    max-width: 560px;
+  }
+  .status:empty {
+    display: none;
+  }
+  .status[data-state="error"] {
+    color: #9a3412;
+  }
+  .alt {
+    margin-top: 28px;
+    color: var(--ink-2);
+  }
+  .alt a {
+    color: var(--ink);
+  }
+  @media (max-width: 767px) {
+    .form :global(.submit) {
+      align-self: stretch;
+      justify-content: center;
+    }
+  }
+</style>

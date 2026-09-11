@@ -1,0 +1,255 @@
+---
+import Underline from "./ui/Underline.astro";
+import { site } from "@/content/site";
+
+/**
+ * Credibility. 498px tall at 1440, on Manila, continuing the band the
+ * Breakdown opened. Four client results in a hard-ruled grid, each with its
+ * logo ghosted behind it.
+ *
+ * THE GHOST WIDTHS ARE PER-LOGO (168/210/150/160%). The four source files
+ * differ in aspect ratio by about 5x: one shared value makes GradMasters
+ * unreadable and EL1 invisible. The numbers come from site.ts, measured
+ * against the reference. Do not normalise them.
+ */
+const { credibility } = site;
+---
+
+<section class="band" aria-labelledby="cred-title">
+  <div class="wrap">
+    <div class="cg">
+      <div>
+        <p class="eyebrow">{credibility.eyebrow}</p>
+        <h2 id="cred-title">
+          {credibility.headlineBefore}<br />
+          {credibility.headlineLead}<Underline>{credibility.headlineUnderline}</Underline
+          >{credibility.headlineTail}
+        </h2>
+        <p class="body">{credibility.body}</p>
+        <div class="facts">
+          {
+            credibility.facts.map((f) => (
+              <span class="fact">
+                <b>{f.bold}</b>
+                {f.rest}
+              </span>
+            ))
+          }
+        </div>
+      </div>
+
+      <div>
+        <p class="eyebrow work-eyebrow">{credibility.workEyebrow}</p>
+        <ul class="work">
+          {
+            credibility.work.map((w) => (
+              <li class="wk">
+                <img
+                  class="ghost"
+                  src={`/logos/logo-${w.logo}-ghost.svg`}
+                  alt=""
+                  aria-hidden="true"
+                  style={`width:${w.ghostWidth}`}
+                  loading="lazy"
+                  decoding="async"
+                />
+                <div class="mark">
+                  <img src={`/logos/logo-${w.logo}.svg`} alt={w.logoAlt} style={w.logoStyle} loading="lazy" decoding="async" />
+                </div>
+                <p class="res">{w.result}</p>
+                <p class="qual">{w.qualifier}</p>
+                <p class="vert">
+                  <b>{w.company}</b>
+                  <i>{w.vertical}</i>
+                </p>
+              </li>
+            ))
+          }
+        </ul>
+        <p class="small foot">{credibility.footnote}</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .band {
+    background: var(--paper-2);
+    padding: 76px 0 68px;
+  }
+  .cg {
+    display: grid;
+    grid-template-columns: 404px 1fr;
+    gap: 74px;
+    align-items: start;
+  }
+  h2 {
+    font-size: var(--fs-h2);
+    line-height: 1;
+    margin-top: 16px;
+  }
+  .body {
+    margin-top: 22px;
+    max-width: 372px;
+  }
+  .facts {
+    display: flex;
+    gap: 9px;
+    flex-wrap: wrap;
+    margin-top: 22px;
+  }
+  .fact {
+    background: var(--paper);
+    box-shadow: inset 0 0 0 1px var(--rule);
+    padding: 10px 13px;
+    font-size: 12px;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .fact b {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+  .work-eyebrow {
+    margin-bottom: 18px;
+  }
+
+  .work {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-top: 2px solid var(--ink);
+    border-bottom: 1px solid var(--rule);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .wk {
+    position: relative;
+    overflow: hidden;
+    padding: 22px 18px 20px;
+    display: flex;
+    flex-direction: column;
+    transition: background-color var(--t-card) var(--ease);
+  }
+  .wk + .wk {
+    box-shadow: inset 1px 0 0 var(--rule);
+  }
+  .wk:hover {
+    background: rgba(255, 200, 0, 0.1);
+  }
+  .wk .ghost {
+    position: absolute;
+    left: 50%;
+    top: 52%;
+    transform: translate(-50%, -50%);
+    max-width: none;
+    opacity: 0.4;
+    pointer-events: none;
+    transition:
+      opacity 0.38s var(--ease),
+      transform 0.5s var(--ease);
+  }
+  .wk:hover .ghost {
+    opacity: 0.64;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+  .wk > *:not(.ghost) {
+    position: relative;
+    z-index: 1;
+  }
+  .mark {
+    height: 46px;
+    display: flex;
+    align-items: center;
+  }
+  .mark img {
+    display: block;
+  }
+  .res {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 25px;
+    line-height: 1;
+    letter-spacing: 0.01em;
+    color: var(--ink);
+    margin-top: 20px;
+  }
+  .qual {
+    font-size: 12.5px;
+    color: var(--ink-2);
+    margin-top: 7px;
+    line-height: 1.4;
+  }
+  .vert {
+    margin-top: auto;
+    padding-top: 18px;
+    font-family: var(--font-display);
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    line-height: 1.5;
+  }
+  .vert b {
+    display: block;
+    font-weight: 700;
+    font-size: 11.5px;
+    color: var(--ink);
+  }
+  .vert i {
+    display: block;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 10px;
+    color: var(--ink-3);
+  }
+  .foot {
+    margin-top: 16px;
+  }
+
+  @media (max-width: 1279px) {
+    .cg {
+      grid-template-columns: 340px 1fr;
+      gap: 48px;
+    }
+    h2 {
+      font-size: clamp(38px, 3.9vw, 50px);
+    }
+  }
+  @media (max-width: 1023px) {
+    .cg {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 44px;
+    }
+    .body {
+      max-width: 560px;
+    }
+    .work {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .wk:nth-child(3) {
+      box-shadow: none;
+    }
+    .wk:nth-child(3),
+    .wk:nth-child(4) {
+      border-top: 1px solid var(--rule);
+    }
+  }
+  @media (max-width: 767px) {
+    .band {
+      padding: 56px 0 56px;
+    }
+    h2 {
+      font-size: 34px;
+    }
+    .work {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .wk + .wk {
+      box-shadow: none;
+      border-top: 1px solid var(--rule);
+    }
+    .wk {
+      padding: 20px 4px;
+    }
+  }
+</style>

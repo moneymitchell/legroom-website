@@ -1,0 +1,194 @@
+---
+import Arrow from "./Arrow.astro";
+import Chip from "./Chip.astro";
+import { site } from "@/content/site";
+
+/**
+ * The email capture.
+ *
+ * The whole unit lifts 2px and its base grows from 5px to 7px on :focus-within,
+ * so tabbing into the input feels the same as hovering the button.
+ *
+ * PROGRESSIVE ENHANCEMENT: this is a real <form method="POST" action="/api/lead">.
+ * With JavaScript off it submits normally and the Worker replies with a 303 to
+ * /thanks. With JavaScript on, the handler in form.ts intercepts, posts JSON and
+ * swaps in inline status text without a navigation. Nothing here depends on JS
+ * to function.
+ */
+interface Props {
+  /** Recorded on the lead row so we know which unit converted. */
+  source: string;
+  class?: string;
+}
+const { source, class: className } = Astro.props;
+const c = site.breakdown.capture;
+const id = `cap-${source}`;
+---
+
+<div class:list={["capture", className]}>
+  <form
+    class="cap"
+    method="POST"
+    action="/api/lead"
+    data-lead-form
+    data-source={source}
+    data-msg-sending={c.sending}
+    data-msg-success={c.success}
+    data-msg-error={c.errorGeneric}
+    data-msg-error-email={c.errorEmail}
+    data-msg-error-rate={c.errorRate}
+  >
+    <label class="sr-only" for={id}>{c.inputLabel}</label>
+    <input
+      id={id}
+      type="email"
+      name="email"
+      required
+      autocomplete="email"
+      inputmode="email"
+      placeholder={c.placeholder}
+    />
+    <input type="hidden" name="source" value={source} />
+    <!-- honeypot: a real person never fills this. off-screen, not display:none,
+         so bots that check for visibility still take the bait. -->
+    <div class="hp" aria-hidden="true">
+      <label for={`${id}-company`}>Company (leave blank)</label>
+      <input id={`${id}-company`} type="text" name="company" tabindex="-1" autocomplete="off" />
+    </div>
+    <div class="cf-turnstile" data-turnstile></div>
+    <button type="submit">
+      {c.submit}
+      <Arrow />
+    </button>
+  </form>
+
+  <p class="status" data-lead-status role="status" aria-live="polite"></p>
+
+  <div class="capnote">
+    <Chip size="small">{c.chip}</Chip>
+    <span class="small">{c.note}</span>
+  </div>
+</div>
+
+<style>
+  .capture {
+    margin-top: 36px;
+    max-width: 560px;
+  }
+  .cap {
+    display: flex;
+    align-items: stretch;
+    box-shadow: 0 5px 0 0 var(--ink);
+    transition:
+      box-shadow 0.12s var(--ease),
+      transform 0.12s var(--ease);
+  }
+  .cap:focus-within {
+    transform: translateY(-2px);
+    box-shadow: 0 7px 0 0 var(--ink);
+  }
+  .cap input[type="email"] {
+    flex: 1;
+    border: 0;
+    outline: 0;
+    background: var(--paper);
+    box-shadow: inset 0 0 0 2px var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    color: var(--ink);
+    padding: 0 18px;
+    min-width: 0;
+    min-height: 56px;
+  }
+  .cap input[type="email"]::placeholder {
+    color: var(--ink-3);
+  }
+  /* the lift already signals focus; keep a ring for the input itself */
+  .cap input[type="email"]:focus-visible {
+    outline: 3px solid var(--ink);
+    outline-offset: -3px;
+  }
+  .cap button {
+    border: 0;
+    cursor: pointer;
+    background: var(--yellow);
+    color: var(--charcoal);
+    font-family: var(--font-display);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--tr-btn);
+    font-size: 15px;
+    padding: 18px 26px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+    white-space: nowrap;
+    transition: background-color var(--t-tint) var(--ease);
+  }
+  .cap button:hover {
+    background: var(--yellow-lift);
+  }
+  .cap button:active {
+    background: var(--yellow-deep);
+  }
+  .cap button::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.55);
+  }
+  .cap button :global(.arw) {
+    transition: transform var(--t-arrow) var(--ease);
+  }
+  .cap button:hover :global(.arw) {
+    transform: translateX(4px);
+  }
+  .cap button[aria-disabled="true"] {
+    opacity: 0.7;
+    cursor: progress;
+  }
+
+  .hp {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  /* Turnstile renders its own iframe; keep it out of the flex row. */
+  .cap :global(.cf-turnstile) {
+    display: none;
+  }
+
+  .status {
+    font-size: 14px;
+    line-height: 1.5;
+    margin-top: 12px;
+    color: var(--ink);
+  }
+  .status:empty {
+    display: none;
+  }
+  .status[data-state="error"] {
+    color: #9a3412;
+  }
+
+  .capnote {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 560px) {
+    .cap {
+      flex-direction: column;
+    }
+    .cap button {
+      justify-content: center;
+    }
+  }
+</style>

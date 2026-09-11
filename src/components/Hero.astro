@@ -1,0 +1,466 @@
+---
+import Nav from "./Nav.astro";
+import Button from "./ui/Button.astro";
+import Chip from "./ui/Chip.astro";
+import Highlight from "./ui/Highlight.astro";
+import { site } from "@/content/site";
+
+/**
+ * Hero. 836px tall at 1440.
+ *
+ * Left: chip, the 76px headline with the sharpie on LEGROOM, two CTAs, the
+ * trust line. Right: the measured-drawing panel — a dashed slot with a dot grid,
+ * the mark, dimension bars and leader lines. The single yellow accent in the
+ * drawing is the "legroom" measure at the bottom (C).
+ *
+ * The panel's annotation coordinates are geometry, not copy, so they live here
+ * and the strings come from site.ts.
+ *
+ * The bottom edge carries the light slitscan strip, faded out at both ends so
+ * it dissolves into the paper rather than stopping at a hard line.
+ */
+interface Props {
+  bookHref: string;
+  contactHref: string;
+}
+const { bookHref, contactHref } = Astro.props;
+const { hero } = site;
+const fig = hero.figure;
+---
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <Nav bookHref={bookHref} contactHref={contactHref} />
+
+    <div class="grid">
+      <div class="col-copy">
+        <Chip>{hero.chip}</Chip>
+
+        <h1>
+          {hero.headlineBefore}<br />
+          {hero.headlineLead}{" "}<Highlight tail>{hero.headlineHighlight}</Highlight><br />
+          {hero.headlineAfter}
+        </h1>
+
+        <p class="lead sub">{hero.sub}</p>
+
+        <div class="cta">
+          <Button variant="yellow" href={bookHref} arrow data-cta="hero-primary">
+            {hero.ctaPrimary}
+          </Button>
+          <Button variant="ghost" href={contactHref} data-cta="hero-secondary">
+            {hero.ctaSecondary}
+          </Button>
+        </div>
+
+        <div class="trust">
+          <span class="bar" aria-hidden="true"></span>
+          <span class="tag">{hero.trust}</span>
+        </div>
+      </div>
+
+      <!-- measured drawing. decorative in full: the copy above carries the meaning -->
+      <div class="slot" role="img" aria-label="Measured drawing of a reclined seat, annotated">
+        <div class="dashed" aria-hidden="true"></div>
+        <div class="dots" aria-hidden="true"></div>
+
+        <svg class="dim-w" width="264" height="18" viewBox="0 0 264 18" fill="none" aria-hidden="true">
+          <path d="M1 4 V14 M263 4 V14 M1 9 H263" stroke="#96917F" stroke-width="1.2"></path>
+        </svg>
+        <span class="ann dim a-dimw">{fig.dimA}</span>
+
+        <img class="mk" src="/brand/mark-charcoal.svg" alt="" width="264" height="206" />
+
+        <svg class="lead1" width="150" height="40" viewBox="0 0 150 40" fill="none" aria-hidden="true">
+          <circle cx="5" cy="34" r="3.2" fill="#23221F" opacity=".7"></circle>
+          <path d="M7 32 C 52 28, 96 16, 146 7" stroke="#23221F" stroke-width="1.4" stroke-linecap="round" opacity=".5"></path>
+        </svg>
+        <span class="ann key a-note1" set:html={fig.note1.replace("\n", "<br>")} />
+
+        <svg class="lead2" width="94" height="58" viewBox="0 0 94 58" fill="none" aria-hidden="true">
+          <circle cx="5" cy="8" r="3.2" fill="#23221F" opacity=".7"></circle>
+          <path d="M7 10 C 38 20, 64 38, 90 50" stroke="#23221F" stroke-width="1.4" stroke-linecap="round" opacity=".5"></path>
+        </svg>
+        <span class="ann key a-note2" set:html={fig.note2.replace("\n", "<br>")} />
+
+        <svg class="dim-h" width="16" height="200" viewBox="0 0 16 200" fill="none" aria-hidden="true">
+          <path d="M3 1 H13 M3 199 H13 M8 1 V199" stroke="#96917F" stroke-width="1.2"></path>
+        </svg>
+        <span class="ann dim a-dimh">{fig.dimB}</span>
+
+        <!-- the one yellow accent in the drawing -->
+        <svg class="measure" width="264" height="22" viewBox="0 0 264 22" fill="none" aria-hidden="true">
+          <path d="M2 3 V19 M262 3 V19" stroke="#E9B300" stroke-width="2.4" stroke-linecap="round"></path>
+          <path d="M3 11 C70 8, 132 15, 261 10" stroke="#FFC800" stroke-width="6" stroke-linecap="round"></path>
+        </svg>
+        <span class="ann key a-measure">{fig.measure}</span>
+
+        <span class="ann dim a-fig">{fig.figCaption}</span>
+        <span class="ann dim a-slot">{fig.slotNote}</span>
+      </div>
+
+      <!--
+        The narrow-screen slot, as drawn in reference/08-mobile.html. The
+        measured drawing is absolutely positioned in a fixed 452x472 box and
+        does not scale, so below 1024 it hands off to this simplified
+        composition: the mark on a single yellow sweep.
+      -->
+      <div class="mslot" role="img" aria-label="The Legroom seat mark">
+        <svg viewBox="0 0 260 150" preserveAspectRatio="none" aria-hidden="true">
+          <path
+            fill="#FFC800"
+            fill-opacity=".30"
+            d="M4,140 C50,134 110,144 170,136 C210,131 240,139 256,131 L253,14 C210,22 160,10 110,17 C70,22 30,12 8,20 Z"></path>
+        </svg>
+        <img src="/brand/mark-charcoal.svg" alt="" width="214" height="167" />
+        <span class="tag">{fig.slotNoteMobile}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phones only. On desktop the credibility band does this job; on a phone it
+       is a long scroll away, so the numbers come up under the fold instead. -->
+  <div class="mstrip">
+    <div class="wrap">
+      {
+        hero.mobileFacts.map((f) => (
+          <span class="fact">
+            <b>{f.bold}</b>
+            {f.rest}
+          </span>
+        ))
+      }
+    </div>
+  </div>
+
+  <div class="scanstrip" aria-hidden="true">
+    <canvas data-slitscan="light"></canvas>
+    <div class="fade"></div>
+  </div>
+</header>
+
+<style>
+  .hero {
+    background: var(--paper);
+    position: relative;
+    overflow: hidden;
+    min-height: 836px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 672px 1fr;
+    gap: 76px;
+    align-items: start;
+    padding-top: 84px;
+  }
+
+  h1 {
+    font-size: var(--fs-h1);
+    line-height: 0.96;
+    margin-top: 26px;
+  }
+  .sub {
+    margin-top: 26px;
+    max-width: 560px;
+  }
+  .cta {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-top: 38px;
+  }
+  .trust {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 42px;
+  }
+  .trust .bar {
+    width: 34px;
+    height: 2px;
+    background: var(--ink-3);
+  }
+
+  /* --- the measured drawing --------------------------------------------- */
+  .slot {
+    position: relative;
+    height: 472px;
+    margin-top: 6px;
+  }
+  .dashed {
+    position: absolute;
+    inset: 0;
+    border: 1.5px dashed var(--paper-3);
+    opacity: 0.9;
+  }
+  .dots {
+    position: absolute;
+    inset: 1px;
+    opacity: 0.55;
+    background-image: radial-gradient(var(--paper-3) 1px, transparent 1px);
+    background-size: 17px 17px;
+  }
+  .slot img.mk {
+    position: absolute;
+    left: 44px;
+    top: 132px;
+    width: 264px;
+    height: auto;
+    display: block;
+  }
+  .ann {
+    position: absolute;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 10.5px;
+    letter-spacing: var(--tr-label);
+    text-transform: uppercase;
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+  .ann.dim {
+    color: var(--ink-3);
+  }
+  .ann.key {
+    color: var(--charcoal);
+    font-weight: 700;
+  }
+
+  .dim-w {
+    position: absolute;
+    left: 44px;
+    top: 104px;
+  }
+  .a-dimw {
+    left: 44px;
+    top: 84px;
+  }
+  .lead1 {
+    position: absolute;
+    left: 186px;
+    top: 136px;
+  }
+  .a-note1 {
+    left: 336px;
+    top: 126px;
+  }
+  .lead2 {
+    position: absolute;
+    left: 252px;
+    top: 236px;
+  }
+  .a-note2 {
+    left: 348px;
+    top: 282px;
+  }
+  .dim-h {
+    position: absolute;
+    left: 318px;
+    top: 132px;
+  }
+  .a-dimh {
+    left: 306px;
+    top: 342px;
+  }
+  .measure {
+    position: absolute;
+    left: 44px;
+    top: 360px;
+  }
+  .a-measure {
+    left: 44px;
+    top: 390px;
+  }
+  .a-fig {
+    left: 22px;
+    top: 436px;
+  }
+  .a-slot {
+    right: 22px;
+    top: 436px;
+  }
+
+  /* --- the scan strip ---------------------------------------------------- */
+  .scanstrip {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 104px;
+    overflow: hidden;
+    background: linear-gradient(
+      180deg,
+      rgba(234, 229, 218, 0) 0%,
+      rgba(234, 229, 218, 0.55) 46%,
+      rgba(234, 229, 218, 0.9) 100%
+    );
+  }
+  .scanstrip canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+  }
+  .scanstrip .fade {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      var(--paper) 0%,
+      rgba(244, 241, 234, 0) 13%,
+      rgba(244, 241, 234, 0) 87%,
+      var(--paper) 100%
+    );
+  }
+
+  /* --- the narrow-screen slot (reference/08-mobile.html) ----------------- */
+  .mslot {
+    display: none;
+    margin-top: 30px;
+    height: 300px;
+    position: relative;
+    border: 1.5px dashed var(--paper-3);
+  }
+  .mslot svg {
+    position: absolute;
+    left: 38px;
+    top: 70px;
+    width: 226px;
+    height: 132px;
+  }
+  .mslot img {
+    position: absolute;
+    left: 68px;
+    top: 78px;
+    width: 214px;
+    height: auto;
+  }
+  .mslot .tag {
+    position: absolute;
+    left: 16px;
+    bottom: 12px;
+  }
+
+  /* --- the phone facts strip -------------------------------------------- */
+  .mstrip {
+    display: none;
+    margin-top: 30px;
+    background: var(--paper-2);
+    padding: 22px 0;
+  }
+  .mstrip .wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .mstrip .fact {
+    background: var(--paper);
+    box-shadow: inset 0 0 0 1px var(--rule);
+    padding: 9px 12px;
+    font-size: 11.5px;
+    white-space: nowrap;
+    color: var(--ink);
+  }
+  .mstrip .fact b {
+    font-family: var(--font-display);
+    font-weight: 700;
+  }
+
+  /* --- responsive --------------------------------------------------------
+     >=1280  the reference layout, exactly: 672 + 76 + 452
+     1024-1279  the drawing keeps its fixed 452px box, the copy column gives way
+     <1024   stack, and hand the drawing off to the simplified mobile slot    */
+  @media (max-width: 1279px) {
+    .grid {
+      grid-template-columns: minmax(0, 1fr) 452px;
+      gap: 52px;
+      padding-top: 60px;
+    }
+    h1 {
+      font-size: clamp(54px, 5.6vw, 76px);
+    }
+    .sub {
+      max-width: none;
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0;
+      padding-top: 48px;
+    }
+    .slot {
+      display: none;
+    }
+    .mslot {
+      display: block;
+      max-width: 520px;
+    }
+    h1 {
+      font-size: clamp(48px, 7vw, 64px);
+    }
+  }
+
+  @media (max-width: 767px) {
+    .hero {
+      min-height: 0;
+      /* the phone board closes with 40px under the facts strip */
+      padding-bottom: 40px;
+    }
+    /* the phone chip is the compact variant */
+    .col-copy :global(.chip) {
+      font-size: 10.5px;
+      padding: 6px 12px 6px 10px;
+    }
+    .grid {
+      padding-top: 26px;
+      gap: 0;
+    }
+    h1 {
+      font-size: var(--fs-h1-m);
+      line-height: 0.98;
+      margin-top: 18px;
+    }
+    .sub {
+      margin-top: 18px;
+      font-size: 16px;
+      /* plain body leading on phones, as drawn: the lead's 1.58 is a
+         desktop-only refinement */
+      line-height: var(--lh-body);
+    }
+    .cta {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+      margin-top: 26px;
+    }
+    .cta :global(.btn) {
+      justify-content: center;
+      width: 100%;
+      font-size: 15px;
+      padding: 16px 20px 15px;
+    }
+    /* The phone design replaces the trust line with the facts strip below the
+       slot: "Operating since 2019" is its first chip. Showing both says it
+       twice. */
+    .trust {
+      display: none;
+    }
+    /* the phone buttons are full-width and centred, with no arrow */
+    .cta :global(.arw) {
+      display: none;
+    }
+    /* the phone design has no scan strip: the facts band closes the hero */
+    .scanstrip {
+      display: none;
+    }
+    .mstrip {
+      display: block;
+    }
+  }
+</style>

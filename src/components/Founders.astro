@@ -1,0 +1,660 @@
+---
+import Button from "./ui/Button.astro";
+import Chip from "./ui/Chip.astro";
+import { site } from "@/content/site";
+
+/**
+ * CTA + founder cards. 995px at 1440.
+ *
+ * Left: the ask, the four Q&A rows, both CTAs, the spots chip.
+ * Right: the two-card vertical scroll deck with its dot rail.
+ *
+ * ---- THE DECK ----
+ * Zero JavaScript. The rail is a scroll-snap container; the dots are driven by
+ * a CSS scroll-driven animation reading the rail's named timeline.
+ *
+ * TRAP: the dots live OUTSIDE the scrolling element, so the grid parent must
+ * declare `timeline-scope: --deck` for the name to be visible to them. Without
+ * that one line the dots silently never move and sit frozen on card one. This
+ * bug has already shipped once. Do not remove it.
+ *
+ * Keyboard: the rail is a focusable region, so arrow keys and PageUp/PageDown
+ * scroll it natively, and each dot is a real anchor link to its card. Both paths
+ * work with scripting disabled.
+ *
+ * Below 768 the deck stops being a scroll container and becomes two stacked
+ * cards. A nested vertical scroller inside a vertically scrolling page traps
+ * touch drags, and no amount of snap tuning fixes that.
+ */
+interface Props {
+  bookHref: string;
+  contactHref: string;
+}
+const { bookHref, contactHref } = Astro.props;
+const { cta, founders } = site;
+---
+
+<section class="sec" id="who-we-are" aria-labelledby="cta-title">
+  <div class="wrap">
+    <div class="fg">
+      <div>
+        <p class="eyebrow">{cta.eyebrow}</p>
+        <h2 id="cta-title">{cta.headlineLines[0]}<br />{cta.headlineLines[1]}</h2>
+        <p class="lead intro">{cta.lead}</p>
+
+        <dl class="qs">
+          {
+            cta.qa.map((row) => (
+              <div class="q">
+                <dt>{row.key}</dt>
+                <dd>{row.value}</dd>
+              </div>
+            ))
+          }
+        </dl>
+
+        <div class="btns">
+          <Button variant="yellow" href={bookHref} arrow data-cta="final-primary">
+            {cta.ctaPrimary}
+          </Button>
+          <Button variant="ghost" href={contactHref} data-cta="final-secondary">
+            {cta.ctaSecondary}
+          </Button>
+        </div>
+        <div class="chiprow"><Chip>{cta.chip}</Chip></div>
+      </div>
+
+      <div class="deck">
+        <div
+          class="rail"
+          id="founder-rail"
+          tabindex="0"
+          role="region"
+          aria-label={founders.deckLabel}
+          aria-describedby="deck-hint"
+        >
+          {
+            founders.list.map((f, i) => (
+              <article class="card" id={`founder-${i + 1}`} aria-label={`${f.firstName} ${f.lastName}`}>
+                <div class="cardin">
+                  <div class="tape2" aria-hidden="true" />
+                  <div class="ctop">
+                    <div>
+                      <p class="eyebrow c-eyebrow">{founders.cardEyebrow}</p>
+                      <p class="d c-org">{founders.cardOrg}</p>
+                    </div>
+                    <span class="cno">{f.index}</span>
+                  </div>
+
+                  <div class="chead">
+                    <div class="pic">
+                      <picture>
+                        <source srcset={`${f.photo.replace(".jpg", ".avif")}`} type="image/avif" />
+                        <source srcset={`${f.photo.replace(".jpg", ".webp")}`} type="image/webp" />
+                        <img
+                          src={f.photo}
+                          alt={f.photoAlt}
+                          width="192"
+                          height="256"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      </picture>
+                    </div>
+                    <div>
+                      <p class="pname">
+                        {f.firstName}
+                        <br />
+                        {f.lastName}
+                      </p>
+                      <p class="prole">{f.role}</p>
+                      <span class="school">
+                        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                          <path
+                            d="M1 4.2 6 1.8 11 4.2 6 6.6 Z"
+                            stroke="#23221F"
+                            stroke-width="1.2"
+                            stroke-linejoin="round"
+                          />
+                          <path
+                            d="M3 5.4v3c0 .6 1.4 1.4 3 1.4s3-.8 3-1.4v-3"
+                            stroke="#23221F"
+                            stroke-width="1.2"
+                            stroke-linecap="round"
+                          />
+                        </svg>
+                        {f.school}
+                      </span>
+                      <div class="socials">
+                        {
+                          f.socials.map((s) => (
+                            <a href={s.href}>
+                              {s.label} <span aria-hidden="true">↗</span>
+                              <span class="sr-only">
+                                , {f.firstName} {f.lastName}, opens in a new tab
+                              </span>
+                            </a>
+                          ))
+                        }
+                      </div>
+                    </div>
+                  </div>
+
+                  <dl class="crows">
+                    {
+                      f.stats.map((s) => (
+                        <div class="crow">
+                          <dt class="l">{s.label}</dt>
+                          <dd class="v">{s.value}</dd>
+                        </div>
+                      ))
+                    }
+                  </dl>
+
+                  <p class="cbio">{f.bio}</p>
+
+                  <blockquote class="cquote">
+                    <b aria-hidden="true">“</b><span>{f.quote}</span>
+                  </blockquote>
+                </div>
+              </article>
+            ))
+          }
+        </div>
+
+        <div class="dotsrail">
+          {
+            founders.list.map((f, i) => (
+              <a
+                class={`sdot d${i + 1}${i === 0 ? " on" : ""}`}
+                href={`#founder-${i + 1}`}
+                aria-label={founders.dotLabel(i + 1, `${f.firstName} ${f.lastName}`)}
+              />
+            ))
+          }
+          <svg class="chev" width="13" height="16" viewBox="0 0 13 16" fill="none" aria-hidden="true">
+            <path
+              d="M6.5 1 V14 M1.6 9.4 L6.5 14.4 L11.4 9.4"
+              stroke="#96917F"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"></path>
+          </svg>
+        </div>
+        <p id="deck-hint" class="sr-only">{founders.deckHint}</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .sec {
+    padding: 96px 0 0;
+    scroll-margin-top: 24px;
+  }
+  .fg {
+    display: grid;
+    grid-template-columns: 1fr 534px;
+    gap: 78px;
+    align-items: start;
+  }
+  h2 {
+    font-size: var(--fs-h2-cta);
+    line-height: 0.98;
+    margin-top: 16px;
+  }
+  .intro {
+    margin-top: 24px;
+    max-width: 470px;
+  }
+
+  /* --- Q&A rows ----------------------------------------------------------- */
+  .qs {
+    margin: 34px 0 0;
+    border-top: 1px solid var(--rule);
+  }
+  .q {
+    padding: 16px 0;
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+  }
+  .q dt {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    color: var(--yellow-deep);
+    flex: none;
+    width: 56px;
+    text-transform: uppercase;
+  }
+  .q dd {
+    font-size: 15.5px;
+    color: var(--ink-2);
+    margin: 0;
+  }
+
+  .btns {
+    margin-top: 36px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .chiprow {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 28px;
+  }
+
+  /* --- the deck ----------------------------------------------------------- */
+  .deck {
+    display: grid;
+    grid-template-columns: 1fr 34px;
+    gap: 12px;
+    align-items: stretch;
+    height: 724px;
+    /* REQUIRED: the dots are outside .rail, so the timeline name has to be
+       scoped here or their animation never runs. */
+    timeline-scope: --deck;
+  }
+  .rail {
+    position: relative;
+    height: 724px;
+    overflow-y: auto;
+    scroll-snap-type: y mandatory;
+    scrollbar-width: none;
+    scroll-behavior: smooth;
+  }
+  .rail::-webkit-scrollbar {
+    display: none;
+  }
+  .rail:focus-visible {
+    outline: 3px solid var(--ink);
+    outline-offset: 2px;
+  }
+  .card {
+    height: 724px;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
+    padding: 16px 2px 16px 9px;
+    position: relative;
+  }
+  .cardin {
+    position: relative;
+    height: 100%;
+    background: var(--paper);
+    padding: 28px 28px 26px;
+    box-shadow:
+      0 2px 0 0 var(--paper-3),
+      0 16px 36px rgba(28, 28, 26, 0.12);
+    transform: rotate(-0.7deg);
+    display: flex;
+    flex-direction: column;
+  }
+  .cardin::before {
+    content: "";
+    position: absolute;
+    left: -8px;
+    top: -8px;
+    right: 8px;
+    bottom: 8px;
+    background: var(--paper);
+    box-shadow: inset 0 0 0 1px var(--rule);
+    z-index: -1;
+    transform: rotate(1.5deg);
+  }
+  .tape2 {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    margin-left: -46px;
+    width: 92px;
+    height: 24px;
+    background: rgba(255, 200, 0, 0.55);
+    transform: rotate(-2.2deg);
+  }
+  .ctop {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 11px;
+  }
+  .c-eyebrow {
+    color: var(--ink-2);
+  }
+  .c-org {
+    font-size: 15px;
+    margin-top: 6px;
+    letter-spacing: 0.1em;
+  }
+  .cno {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: var(--tr-label);
+    color: var(--ink-3);
+  }
+
+  .chead {
+    display: grid;
+    grid-template-columns: 192px 1fr;
+    gap: 20px;
+    margin-top: 18px;
+  }
+  /* Photos sit on Manila, not white. They were composited that way so the two
+     headshots read as one set. Do not put them on a white card. */
+  .pic {
+    width: 192px;
+    height: 256px;
+    border-radius: 7px;
+    overflow: hidden;
+    position: relative;
+    background: var(--paper-2);
+    box-shadow:
+      inset 0 0 0 1px var(--rule),
+      0 3px 0 0 var(--paper-3);
+  }
+  .pic img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .pic::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 7px;
+    box-shadow: inset 0 0 0 1px rgba(28, 28, 26, 0.1);
+  }
+  .pname {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 27px;
+    text-transform: uppercase;
+    letter-spacing: 0.015em;
+    line-height: 0.98;
+    color: var(--ink);
+  }
+  .prole {
+    font-size: 13px;
+    color: var(--ink-2);
+    margin-top: 8px;
+    line-height: 1.45;
+  }
+  .school {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 14px;
+    padding: 6px 10px;
+    background: var(--paper-2);
+    box-shadow: inset 0 0 0 1px var(--rule);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  .socials {
+    display: flex;
+    gap: 7px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+  .socials a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: var(--paper);
+    box-shadow: inset 0 0 0 1px var(--rule);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    text-decoration: none;
+    transition:
+      background-color var(--t-tint) var(--ease),
+      color var(--t-tint) var(--ease),
+      transform 0.12s var(--ease);
+  }
+  .socials a:hover {
+    background: var(--yellow);
+    color: var(--charcoal);
+    transform: translateY(-1px);
+  }
+
+  .crows {
+    margin: 20px 0 0;
+  }
+  .crow {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    padding: 9px 0;
+    border-bottom: 1px dashed var(--rule);
+  }
+  .crow .l {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .crow .v {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+    margin: 0;
+    text-align: right;
+  }
+  .cbio {
+    font-size: 14.5px;
+    line-height: 1.58;
+    color: var(--ink-2);
+    margin-top: 18px;
+  }
+  .cquote {
+    margin: auto 0 0;
+    background: var(--yellow);
+    padding: 14px 16px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .cquote span {
+    font-size: 13.5px;
+    line-height: 1.45;
+    color: var(--charcoal);
+  }
+  .cquote b {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 26px;
+    line-height: 0.7;
+    color: var(--charcoal);
+    flex: none;
+  }
+
+  /* --- dots --------------------------------------------------------------- */
+  .dotsrail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 13px;
+    position: relative;
+  }
+  .sdot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1.7px var(--ink-3);
+    background: var(--paper);
+    position: relative;
+    z-index: 1;
+    cursor: pointer;
+    display: block;
+    transition:
+      box-shadow var(--t-card) var(--ease),
+      background-color var(--t-card) var(--ease),
+      transform var(--t-card) var(--ease);
+  }
+  /* a 12px dot is a 12px dot; the tap target around it is 44px */
+  .sdot::before {
+    content: "";
+    position: absolute;
+    inset: -16px;
+  }
+  .sdot.on {
+    background: var(--yellow);
+    box-shadow: inset 0 0 0 1.7px var(--charcoal);
+    transform: scale(1.28);
+  }
+  .sdot:focus-visible {
+    outline: 3px solid var(--ink);
+    outline-offset: 4px;
+  }
+  .chev {
+    margin-top: 16px;
+    opacity: 0.5;
+    animation: nudge 2.4s var(--ease) infinite;
+  }
+  @keyframes nudge {
+    0%,
+    72%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.45;
+    }
+    84% {
+      transform: translateY(4px);
+      opacity: 0.85;
+    }
+  }
+
+  @supports (animation-timeline: scroll()) {
+    .sdot {
+      animation: dotA linear both;
+      animation-timeline: --deck;
+      animation-range: 0% 100%;
+    }
+    .sdot.d2 {
+      animation-name: dotB;
+    }
+    .rail {
+      scroll-timeline: --deck y;
+    }
+  }
+  @keyframes dotA {
+    0% {
+      background: #ffc800;
+      box-shadow: inset 0 0 0 1.6px #1c1c1a;
+      transform: scale(1.25);
+    }
+    100% {
+      background: #f4f1ea;
+      box-shadow: inset 0 0 0 1.6px #96917f;
+      transform: scale(1);
+    }
+  }
+  @keyframes dotB {
+    0% {
+      background: #f4f1ea;
+      box-shadow: inset 0 0 0 1.6px #96917f;
+      transform: scale(1);
+    }
+    100% {
+      background: #ffc800;
+      box-shadow: inset 0 0 0 1.6px #1c1c1a;
+      transform: scale(1.25);
+    }
+  }
+
+  /* --- responsive --------------------------------------------------------- */
+  @media (max-width: 1279px) {
+    .fg {
+      grid-template-columns: minmax(0, 1fr) 460px;
+      gap: 48px;
+    }
+    h2 {
+      font-size: clamp(42px, 4.5vw, 58px);
+    }
+  }
+  @media (max-width: 1023px) {
+    .fg {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 64px;
+    }
+    .deck {
+      max-width: 560px;
+    }
+  }
+  @media (max-width: 767px) {
+    .sec {
+      padding-top: 64px;
+    }
+    h2 {
+      font-size: 36px;
+    }
+    .btns {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .btns :global(.btn) {
+      justify-content: center;
+    }
+    /* no nested scroll container on touch: just stack the two cards */
+    .deck {
+      display: block;
+      height: auto;
+      max-width: none;
+    }
+    .rail {
+      height: auto;
+      overflow: visible;
+      scroll-snap-type: none;
+    }
+    .card {
+      height: auto;
+      padding: 16px 2px 24px 9px;
+    }
+    .cardin {
+      height: auto;
+    }
+    .chead {
+      grid-template-columns: 140px 1fr;
+      gap: 14px;
+    }
+    .pic {
+      width: 140px;
+      height: 187px;
+    }
+    .pname {
+      font-size: 22px;
+    }
+    .dotsrail {
+      display: none;
+    }
+  }
+  @media (max-width: 420px) {
+    .chead {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .pic {
+      width: 100%;
+      max-width: 200px;
+      height: 266px;
+    }
+  }
+</style>
