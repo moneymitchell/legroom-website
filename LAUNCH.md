@@ -25,7 +25,12 @@ npx wrangler d1 create legroom-leads
 npx wrangler kv namespace create LEAD_RATE
 ```
 
-Open `wrangler.jsonc` and replace `REPLACE_WITH_D1_DATABASE_ID` and `REPLACE_WITH_KV_NAMESPACE_ID` with those ids. Then:
+Open `wrangler.jsonc` and replace the two all-zero placeholder ids with the real ones:
+
+- `d1_databases[0].database_id` — currently `00000000-0000-0000-0000-000000000000`
+- `kv_namespaces[0].id` — currently `0000000000000000000000000000000a`
+
+They are well-formed so `wrangler dev` runs locally out of the box, but they point at nothing. Then:
 
 ```bash
 npx wrangler d1 migrations apply legroom-leads --remote

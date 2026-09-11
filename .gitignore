@@ -14,6 +14,7 @@ playwright-report
 tests/__screenshots__/*-actual.png
 tests/__screenshots__/*-diff.png
 .lighthouseci
+.lighthouseci-mobile
 
 .DS_Store
 *.log
