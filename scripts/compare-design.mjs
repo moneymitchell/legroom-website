@@ -17,6 +17,10 @@ async function shot(url, sel, w, through) {
     const rail=document.querySelector('.rail'); if(rail){rail.style.scrollBehavior='auto';rail.scrollTop=rail.scrollHeight;await wt(80);rail.scrollTop=0;await wt(80);}
     scrollTo(0,0);
     await Promise.all([...document.images].map(i=>i.complete?1:Promise.race([i.decode().catch(()=>{}),wt(2000)])));});
+  // R3: hide the fixed sticky rail. It has no counterpart in the reference
+  // boards and, being fixed, appears inside every clip. Hidden not masked, so
+  // the reference pixels underneath it still get compared.
+  await p.addStyleTag({ content: '.railbar { display: none !important }' });
   const masks = await p.locator('canvas, .pic img').all();
   let buf;
   if (through) {

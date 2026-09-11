@@ -73,6 +73,13 @@ for (const sec of SECTIONS) {
       ),
     );
   });
+  // R3: the sticky rail is `position: fixed`, so it lands inside every section
+  // clip regardless of where that section sits on the page, and it has no
+  // counterpart in the reference boards. Hidden rather than masked: masking
+  // would blank out whatever the reference actually has in those 57px. The bar
+  // is asserted on its own in tests/visual.spec.ts.
+  await page.addStyleTag({ content: ".railbar { display: none !important }" });
+
   await page.waitForTimeout(300);
 
   const target = page.locator(sec.selector).first();
@@ -288,6 +295,43 @@ function syncMask(a, b) {
 }
 
 const THRESHOLD = 0.8;
+
+/**
+ * Per-section allowances, and the reason each one exists.
+ *
+ * The boards in handoff/reference are the APPROVED DESIGN, and they carry R2
+ * copy. R3 replaced copy in three of these frames on the client's
+ * instruction, so those frames now differ from their board by glyphs. That is
+ * the change, not a regression, and re-shooting the boards to match would
+ * throw away the only independent record of what was approved.
+ *
+ * So the gate stays at 0.8% everywhere, and the frames whose words changed
+ * carry a written allowance sized just above the measured diff. Anything past
+ * that still fails, which is the point: a real regression in one of these
+ * sections is still caught, it just has a higher floor.
+ *
+ * The allowance covers DIFFERING PIXELS ONLY. Δh and align are reported
+ * separately and are not relaxed by anything here: the layout still has to
+ * port exactly, and 08-mobile's +50 is text reflow in a column, not a frame
+ * that moved.
+ *
+ * Delete an entry the moment its board is re-shot.
+ */
+const ALLOW = {
+  "02-breakdown": {
+    pct: 1.1,
+    why: "R3: eyebrow, lead and step 1 rewritten for the 15-minute offer (was 0.397)",
+  },
+  "06-cta-founders": {
+    pct: 4.8,
+    why: "R3: both founder roles, Sean's bio and quote, and the whole Last thing block (was 0.411)",
+  },
+  "08-mobile": {
+    pct: 11.5,
+    why: "R3: the same copy reflowed at 390. The longer bios add 50px of column (was 0.563)",
+  },
+};
+
 let failed = 0;
 console.log("\nSection                    diff%    pixels      actual        reference   Δh  align");
 console.log("-".repeat(92));
@@ -297,12 +341,22 @@ for (const r of results) {
     failed++;
     continue;
   }
-  const flag = r.pct <= THRESHOLD ? "ok" : "OVER";
-  if (r.pct > THRESHOLD) failed++;
+  const allow = ALLOW[r.name];
+  const limit = allow ? allow.pct : THRESHOLD;
+  const flag = r.pct <= limit ? (allow ? "ok*" : "ok") : "OVER";
+  if (r.pct > limit) failed++;
   console.log(
     `${r.name.padEnd(24)}  ${r.pct.toFixed(3).padStart(6)}  ${String(r.differing).padStart(8)}  ${r.actualSize.padStart(11)}  ${r.refSize.padStart(11)}  ${String(r.heightDelta).padStart(4)}  ${String(r.align).padStart(5)}  ${flag}`,
   );
 }
 console.log("-".repeat(92));
-console.log(`threshold ${THRESHOLD}% differing pixels per section\n`);
+console.log(`threshold ${THRESHOLD}% differing pixels per section`);
+const used = results.filter((r) => ALLOW[r.name]);
+if (used.length > 0) {
+  console.log("\n* copy changed since the board was shot, so this frame runs on an allowance:");
+  for (const r of used) {
+    console.log(`    ${r.name.padEnd(18)} limit ${String(ALLOW[r.name].pct).padStart(5)}%   ${ALLOW[r.name].why}`);
+  }
+}
+console.log("");
 process.exit(failed > 0 ? 1 : 0);
