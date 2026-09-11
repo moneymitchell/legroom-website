@@ -11,10 +11,11 @@ import { site } from "@/content/site";
  * bottom of the viewport, where it can run as an actual line rather than four
  * labels blinking above a logo. What is left is the signature.
  *
- * The yellow swipe is aligned to the WORDMARK, not the whole lockup. In the
- * lockup file the wordmark path starts at 26.04% of the total width and ends
- * at 96.01%, so those are the two numbers below. It previously started under
- * the seat mark and overhung the final M, which is what read as crooked.
+ * The yellow swipe is aligned to the WORDMARK, not the whole lockup. Measured
+ * off the lockup file itself: the wordmark path's bounding box runs x 1170.88
+ * to 4317.25 in a 4496.7 viewBox, so 26.038% to 96.010%, the left edge of the
+ * L to the right edge of the M. It is positioned by left + width, never by
+ * left + right. See the note on .swipe.
  */
 const { wordmark } = site;
 ---
@@ -126,7 +127,13 @@ const { wordmark } = site;
   .swipe {
     position: absolute;
     left: 26.04%;
-    right: 3.99%;
+    /* WIDTH, not `right`. An <svg> is a replaced element: with a viewBox and
+       a set height it has an intrinsic width, so left + right + auto width is
+       over-constrained and the browser throws `right` away. The swipe was
+       being drawn 859px wide, its full 700:22 ratio against a 27px height,
+       which is why it ran past the M no matter what `right` said.
+       96.010% - 26.038% = 69.97%. */
+    width: 69.97%;
     bottom: -16px;
     height: 27px;
   }
