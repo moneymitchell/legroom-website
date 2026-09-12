@@ -317,7 +317,16 @@ export const site = {
      it, measure it, bank the saving, put it back to work. */
   rail: {
     label: "How the work pays for itself",
-    stops: ["Try Legroom", "Measure the results", "Less time more money", "Reinvest and grow"],
+    /* Set C, approved 2026-09-12. The pronouns do the work: it reads as a
+       partnership rather than a product, and each beat has an owner.
+
+       The fourth one is the hard one. "Make more money" is the claim every
+       agency makes and none of them can show, and the rule here is that a
+       number we cannot prove does not get printed. What Legroom actually
+       delivers is a cost removed, not revenue created, so the believable
+       version says exactly that. "The difference" also quietly concedes the
+       system costs something, which is what makes it land. */
+    stops: ["Show us the week", "We find the leak", "We build the fix", "You keep the difference"],
   },
 
   /* --- 6. CTA + founders -------------------------------------------------- */

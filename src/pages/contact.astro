@@ -86,9 +86,10 @@ const cap = site.breakdown.capture;
 
 <script>
   import { initForms } from "@/scripts/form";
-  import { initAnalytics } from "@/scripts/analytics";
+  import { initAnalytics, initGa4 } from "@/scripts/analytics";
   import { initPointerTilt } from "@/scripts/pointer-tilt";
   initForms(import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "");
+  initGa4(import.meta.env.PUBLIC_GA4_ID ?? "");
   initAnalytics();
   initPointerTilt();
 </script>

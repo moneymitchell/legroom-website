@@ -90,12 +90,25 @@ test("contractions use the typographic apostrophe, not a straight quote", () => 
   // string delimiters are untouched.
   const offenders: string[] = [];
   for (const file of [join(ROOT, "src/content/site.ts"), join(ROOT, "src/content/emails.ts")]) {
+    // Block-comment state is TRACKED, not guessed from how a line begins.
+    // Skipping lines that start with a marker misses the body of every
+    // multi-line /* */ comment, so prose written about the copy gets scanned
+    // as though it were the copy, and the only way to quiet it is to go and
+    // rewrite a comment. That is a test training you to work around it.
+    let inBlock = false;
     readFileSync(file, "utf8")
       .split("\n")
       .forEach((line, i) => {
         const t = line.trim();
-        // comments are code, not copy
-        if (t.startsWith("//") || t.startsWith("*") || t.startsWith("/*")) return;
+        if (inBlock) {
+          if (t.includes("*/")) inBlock = false;
+          return;
+        }
+        if (t.startsWith("/*")) {
+          if (!t.includes("*/")) inBlock = true;
+          return;
+        }
+        if (t.startsWith("//") || t.startsWith("*")) return;
         if (/[A-Za-z]'[A-Za-z]/.test(line)) {
           offenders.push(`${file.replace(ROOT + "/", "")}:${i + 1}  ${t.slice(0, 80)}`);
         }

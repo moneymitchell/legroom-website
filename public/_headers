@@ -8,7 +8,7 @@
   X-Frame-Options: DENY
   Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), usb=(), interest-cohort=()
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; img-src 'self' data:; font-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' https://challenges.cloudflare.com https://app.cal.com https://cal.com; connect-src 'self' https://challenges.cloudflare.com https://app.cal.com https://cal.com; frame-src https://challenges.cloudflare.com https://app.cal.com https://cal.com; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; img-src 'self' data: https://www.google-analytics.com https://www.googletagmanager.com; font-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' https://challenges.cloudflare.com https://app.cal.com https://cal.com https://www.googletagmanager.com; connect-src 'self' https://challenges.cloudflare.com https://app.cal.com https://cal.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src https://challenges.cloudflare.com https://app.cal.com https://cal.com; upgrade-insecure-requests
 
 # Hashed build output is immutable by construction.
 /_astro/*

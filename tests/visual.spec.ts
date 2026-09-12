@@ -641,10 +641,10 @@ test.describe("the sticky rail", () => {
       .locator(".railbar .station span")
       .evaluateAll((els) => els.map((e) => (e.textContent ?? "").trim()));
     expect(labels).toEqual([
-      "Try Legroom",
-      "Measure the results",
-      "Less time more money",
-      "Reinvest and grow",
+      "Show us the week",
+      "We find the leak",
+      "We build the fix",
+      "You keep the difference",
     ]);
   });
 
