@@ -47,7 +47,7 @@ this site at least once.
 | `npm run deploy` | Build, then `wrangler deploy`. | Manual escape hatch. Normal deploys go through git; see Deployment. |
 | `npm run cf:dev` | Build, then `wrangler dev`: the Worker plus the built site. | Defaults to :8787. `check:csp` expects :8788, so pass `--port 8788`. |
 | `npm run db:migrate` | Apply D1 migrations against the **remote** database. | Not local. See LAUNCH.md. |
-| `npm run leads` | Print the leads out of D1, newest first. | `-- --all` for every row, `-- --csv` for a spreadsheet. Reads remote. |
+| `npm run leads` | Print the leads out of D1, newest first. | `-- --all` for every row, `-- --csv` for stdout, `-- --out` for a CSV file. Reads remote. |
 | `npm run test:pixels` | Diff every section against the handoff PNGs. | Gates at 0.8% differing pixels, with written per-section allowances. Exits non-zero. |
 | `npm run test:design` | Diff every section against the reference HTML, rendered in the same browser. | Removes the capture session as a variable. Reports, does not gate. |
 | `npm run lh:mobile` | Same, mobile form factor. |  |

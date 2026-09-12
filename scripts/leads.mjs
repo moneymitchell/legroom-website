@@ -5,6 +5,7 @@
  *   npm run leads            the last 20, newest first
  *   npm run leads -- --all   every row
  *   npm run leads -- --csv   CSV on stdout, for a spreadsheet
+ *   npm run leads -- --out   write leads-YYYY-MM-DD.csv, to drag into Drive
  *
  * The Cloudflare dashboard can do this too, but it is four clicks and a SQL
  * box, and the thing you want to know at 9am is "did anything come in", which
@@ -16,10 +17,14 @@
  * ========================================================================= */
 
 import { execFileSync } from "node:child_process";
+import { writeFileSync } from "node:fs";
 
 const args = process.argv.slice(2);
 const all = args.includes("--all");
 const csv = args.includes("--csv");
+/** --out writes a file instead of printing, for dragging into Drive. */
+const outIdx = args.indexOf("--out");
+const out = outIdx >= 0 ? (args[outIdx + 1] ?? `leads-${new Date().toISOString().slice(0, 10)}.csv`) : null;
 const limit = all ? 1000 : 20;
 
 const sql = `SELECT created_at, source, email, name, message FROM leads ORDER BY created_at DESC LIMIT ${limit};`;
@@ -54,11 +59,18 @@ const when = (iso) =>
     minute: "2-digit",
   });
 
-if (csv) {
+if (csv || out) {
   const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-  console.log("created_at,source,email,name,message");
+  const lines = ["created_at,source,email,name,message"];
   for (const r of rows) {
-    console.log([r.created_at, r.source, r.email, r.name, r.message].map(esc).join(","));
+    lines.push([r.created_at, r.source, r.email, r.name, r.message].map(esc).join(","));
+  }
+  const body = lines.join("\n") + "\n";
+  if (out) {
+    writeFileSync(out, body);
+    console.log(`\n  ${rows.length} lead${rows.length === 1 ? "" : "s"} written to ${out}\n`);
+  } else {
+    process.stdout.write(body);
   }
   process.exit(0);
 }
