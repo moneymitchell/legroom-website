@@ -45,9 +45,9 @@ jobs:
     timeout-minutes: 25
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           # .nvmrc is the single source of truth for the Node version, shared
           # with Cloudflare Workers Builds. engines in package.json agrees.
@@ -78,13 +78,17 @@ jobs:
         # writes only to tests/__screenshots__ and can never touch a baseline.
         #
         # The comparator needs the built site served; it does not start a
-        # server of its own the way the Playwright config does. `npm run serve`
-        # and not `astro preview`: preview backgrounds itself off a TTY and
-        # takes a lock, so it can neither be killed by its own PID nor let the
+        # server of its own the way the Playwright config does. Not
+        # `astro preview`: preview backgrounds itself off a TTY and takes a
+        # lock, so it can neither be killed by its own PID nor let the
         # Playwright step start a server afterwards. See scripts/serve-dist.mjs.
         # Status is captured explicitly so the kill cannot swallow a failure.
         run: |
-          npm run serve -- --port 4321 --host 127.0.0.1 &
+          # `node`, not `npm run serve`. $! from an npm script is npm's own
+          # wrapper PID; killing it leaves the node child holding port 4321 and
+          # the Playwright step below then refuses to start its server. Run the
+          # script directly and $! is the process that actually owns the port.
+          node scripts/serve-dist.mjs --port 4321 --host 127.0.0.1 &
           server=$!
           for i in $(seq 1 30); do
             curl -sf -o /dev/null http://127.0.0.1:4321/ && break
@@ -98,6 +102,12 @@ jobs:
           set -e
           cat pixels.txt
           kill "$server" 2>/dev/null || true
+          # Wait for the port to actually come free rather than assuming the
+          # signal was instant. This is the handoff to the Playwright step.
+          for i in $(seq 1 15); do
+            curl -sf -o /dev/null http://127.0.0.1:4321/ || break
+            sleep 1
+          done
           exit $status
 
       - name: Playwright
@@ -135,7 +145,7 @@ jobs:
 
       - name: Upload the Playwright report
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: playwright-report-${{ github.run_id }}
           path: |
@@ -146,7 +156,7 @@ jobs:
 
       - name: Upload the visual diffs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: visual-diffs-${{ github.run_id }}
           path: tests/__screenshots__/
