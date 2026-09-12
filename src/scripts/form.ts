@@ -56,18 +56,41 @@ export function initForms(siteKey: string): void {
     // Bots fill instantly. A human takes seconds. The Worker sees this value.
     const mountedAt = Date.now();
 
+    /**
+     * The guard is a SYNCHRONOUS flag, not `widgetId !== undefined`.
+     *
+     * Clicking an input fires pointerdown and then focusin. Both listeners are
+     * `once`, but they are two different listeners, so both fire. widgetId is
+     * only assigned inside the .then(), so both calls got past a
+     * `widgetId !== undefined` check, both awaited the same load promise, and
+     * both called render() on the same container. Turnstile rejected the
+     * second with "Turnstile has already been rendered in this container", and
+     * that rejected call returns undefined, which then overwrote the widgetId
+     * the first one had just produced.
+     *
+     * Net effect: no token, ever. getResponse(undefined) returns nothing, the
+     * Worker treats every real visitor as the no-JavaScript path, and the bot
+     * protection everybody assumed was on was inert. It also silently drops
+     * every visitor onto the tighter no-token rate limit, 2 an hour instead
+     * of 5.
+     */
+    let warming = false;
     const warm = () => {
-      if (!siteKey || !holder || widgetId !== undefined) return;
+      if (!siteKey || !holder || warming) return;
+      warming = true;
       loadTurnstile()
         .then(() => {
-          widgetId = window.turnstile?.render(holder, {
+          const id = window.turnstile?.render(holder, {
             sitekey: siteKey,
             size: "flexible",
             appearance: "interaction-only",
           });
+          // Never overwrite a good id with an undefined one.
+          if (id !== undefined) widgetId = id;
         })
         .catch(() => {
           /* no token; the Worker applies its no-token controls instead */
+          warming = false;
         });
     };
     form.addEventListener("focusin", warm, { once: true });
