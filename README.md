@@ -10,27 +10,67 @@ This is a **port of an approved design**, not a design. The source of truth is `
 
 ```bash
 npm install
-cp .env.example .env.local     # optional; everything has a working default
 npm run dev                    # http://localhost:4321
 ```
 
+Nothing has to be configured to get the page on screen. Every environment
+variable has a working default and the page renders without any of them. What
+you lose without them is the booking link and the bot check, both covered
+below.
+
+To work on anything that will be verified, build first:
+
 ```bash
-npm run build                  # static output to ./dist
-npm run preview                # serve ./dist
-npm run check                  # astro check: types + templates
-npm run typecheck              # tsc on src and worker
-npm test                       # Playwright: 65 visual, behaviour, a11y, copy and analytics tests
-npm run test:pixels            # diff every section against the handoff PNGs
-npm run test:design            # diff every section against the reference HTML
-npm run lh && npm run lh:report # Lighthouse CI, desktop
-npm run lh:mobile              # Lighthouse CI, mobile
-npm run assets                 # regenerate AVIF/WebP, OG card, favicons
-npm run emails                 # render both transactional emails as they will send
-npm run cf:dev                 # the Worker plus the built site, on :8788
-npm run check:csp              # needs cf:dev running in another shell first
+npm run build && npm run preview     # then the gates below run against :4321
 ```
 
-Tests run against the **production build**, never the dev server. A pass on `astro dev` proves nothing about what ships.
+**Every gate runs against the production build, never the dev server.** A pass
+on `astro dev` proves nothing about what ships: the CSS minifier, the CSP and
+the hashed asset names all only exist after a build, and all three have broken
+this site at least once.
+
+### Every script
+
+| Script | What it does | Watch out |
+| --- | --- | --- |
+| `npm run test` | The full Playwright suite, 75 tests. | Visual behaviour, a11y, copy, analytics, booking. |
+| `npm run dev` | Astro dev server on :4321. | Fast, but nothing is verified against it. See the note below. |
+| `npm run build` | Static build to `./dist`. | What every gate and every deploy actually runs against. |
+| `npm run preview` | Serve `./dist` on :4321. | The target for the Playwright suite and both comparators. |
+| `npm run check` | `astro check`: types plus template and prop checking. |  |
+| `npm run typecheck` | `tsc --noEmit` over `src/` and `worker/`, two configs. |  |
+| `npm run test:visual` | Just `tests/visual.spec.ts`. |  |
+| `npm run test:a11y` | Just `tests/a11y.spec.ts`. |  |
+| `npm run lh` | Lighthouse CI, desktop, three runs, asserts against `lighthouserc.json`. |  |
+| `npm run assets` | Regenerate AVIF/WebP founder photos, the OG card and the favicons. | Build-time only, needs `sharp`. Commit the output. |
+| `npm run deploy` | Build, then `wrangler deploy`. | Manual escape hatch. Normal deploys go through git; see Deployment. |
+| `npm run cf:dev` | Build, then `wrangler dev`: the Worker plus the built site. | Defaults to :8787. `check:csp` expects :8788, so pass `--port 8788`. |
+| `npm run db:migrate` | Apply D1 migrations against the **remote** database. | Not local. See LAUNCH.md. |
+| `npm run test:pixels` | Diff every section against the handoff PNGs. | Gates at 0.8% differing pixels, with written per-section allowances. Exits non-zero. |
+| `npm run test:design` | Diff every section against the reference HTML, rendered in the same browser. | Removes the capture session as a variable. Reports, does not gate. |
+| `npm run lh:mobile` | Same, mobile form factor. |  |
+| `npm run lh:report` | Print the medians from the last `lh` and `lh:mobile` runs. |  |
+| `npm run check:csp` | Load every page behind the real `_headers` CSP and report any violation. | Needs `npm run cf:dev` running in another shell first. |
+| `npm run emails` | Render both transactional emails to disk exactly as they will send. |  |
+
+### The full local gate, in order
+
+This is exactly what CI runs. If all of it is green, a push will be too.
+
+```bash
+npm run typecheck && npm run check && npm run build && npm test && npm run test:pixels
+npm run lh && npm run lh:mobile && npm run lh:report
+```
+
+`check:csp` is the one gate that is not in that chain, because it needs a
+second shell:
+
+```bash
+npx wrangler dev --port 8788      # shell one
+npm run check:csp                 # shell two
+```
+
+---
 
 ---
 
@@ -51,6 +91,8 @@ Every one came from `npm view <pkg> version` at build time, not from memory.
 | @cloudflare/workers-types | 5.20260911.1 | |
 | sharp | 0.35.4 | build-time only, for `npm run assets` |
 | pixelmatch / pngjs | 7.2.0 / 7.0.0 | visual regression only |
+
+Node **24**, npm **11.19.1**. The version is pinned in three places that have to agree: `engines` in `package.json`, `.nvmrc`, and `node-version` in `.github/workflows/ci.yml`. Cloudflare Workers Builds reads `.nvmrc`, which is the only reason that file exists.
 
 No UI framework. No React. The interactive pieces are vanilla TypeScript and total **4.9 KB gzipped**.
 

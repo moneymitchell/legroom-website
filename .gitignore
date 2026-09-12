@@ -12,12 +12,15 @@ dist
 .dev.vars
 .dev.vars.*
 
-# test + audit output
+# test + audit output. Globs, not exact names: .lighthouseci-mobile was created
+# by a later npm script than .lighthouseci and got committed before anyone
+# noticed, which is 7MB of localhost Lighthouse HTML sitting in this history
+# forever. A new form factor must not be able to do that again.
 test-results
 playwright-report
 tests/__screenshots__/
-.lighthouseci
-.lighthouseci-mobile
+.lighthouseci*
+qa-results/
 
 .DS_Store
 *.log
