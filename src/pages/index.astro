@@ -51,6 +51,30 @@ import { bookHref, contactHref } from "@/lib/links";
   // keeps them out of the interaction window: it costs a few hundred
   // milliseconds of an eight-second wave nobody is waiting for, and it is the
   // difference between 190ms and near-zero total blocking time.
+  /**
+   * The wordmark band is taken OUT OF THE DOM below the tablet breakpoint,
+   * not hidden with display: none.
+   *
+   * It is a full-bleed band built around an 860px lockup and a pointer-driven
+   * canvas. A phone has neither the width nor a pointer: the lockup clips at
+   * the left edge, the wave is a frozen frame, and it costs about 390px of
+   * scrolling to show a logo the visitor has already seen in the nav. Removing
+   * the node means it is never laid out, never painted, never composited, and
+   * its canvas can never start a loop.
+   *
+   * Honest about what this does not do: the site is statically generated, so
+   * one HTML file serves every device and the markup is still DOWNLOADED. That
+   * is roughly 400 bytes. The costs that actually matter on a phone, layout,
+   * paint and a rAF loop, all go away.
+   *
+   * 768 matches the breakpoint WordmarkBreak.astro itself uses. matchMedia
+   * rather than a resize listener: this runs once, and a phone does not change
+   * class mid-session.
+   */
+  if (window.matchMedia?.("(max-width: 767px)").matches) {
+    document.querySelector("section.brk")?.remove();
+  }
+
   const start = () => {
     initSlitscans();
     initMeasureRules();

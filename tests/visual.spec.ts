@@ -241,6 +241,95 @@ test.describe("the canvas bands", () => {
   });
 });
 
+test.describe("the phone", () => {
+  const phone = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true };
+
+  test("a cold load lands at the top and stays there", async ({ browser }) => {
+    // The reported symptom was the page opening at Sean's founder card. The
+    // cause turned out to be history.scrollRestoration, which is correct
+    // browser behaviour on a reload and must not be disabled, because doing
+    // so also breaks the back button. What has to hold is that a visitor
+    // arriving for the FIRST time lands at the top: nothing may steal focus,
+    // scroll an ancestor into view, or reflow the page out from under them.
+    const ctx = await browser.newContext(phone);
+    const page = await ctx.newPage();
+    await page.goto("/");
+    expect(await page.evaluate(() => window.scrollY), "the page jumped on load").toBe(0);
+    await page.waitForTimeout(1500);
+    expect(
+      await page.evaluate(() => window.scrollY),
+      "something scrolled the page after load, 1500ms in",
+    ).toBe(0);
+    await ctx.close();
+  });
+
+  test("the wordmark band is gone from the DOM, and desktop still has it", async ({ browser }) => {
+    const m = await browser.newContext(phone);
+    const mp = await m.newPage();
+    await mp.goto("/");
+    await mp.waitForTimeout(600);
+    await expect(mp.locator("section.brk"), "the wordmark band is still on the phone").toHaveCount(0);
+    await m.close();
+
+    const d = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const dp = await d.newPage();
+    await dp.goto("/");
+    await dp.waitForTimeout(600);
+    await expect(dp.locator("section.brk"), "the wordmark band vanished from desktop").toHaveCount(1);
+    await d.close();
+  });
+
+  test("no canvas loop runs where there is no pointer", async ({ browser }) => {
+    const ctx = await browser.newContext(phone);
+    const page = await ctx.newPage();
+    await page.goto("/");
+    await page.waitForTimeout(1200);
+    // Both engines size their backing store on mount. An unmounted canvas keeps
+    // the 300x150 default, which is the cheapest proof it never started.
+    const mounted = await page.evaluate(() =>
+      [...document.querySelectorAll("canvas")].map((c) => c.width),
+    );
+    expect(mounted.filter((w) => w !== 300), "a canvas engine mounted on a touch device").toEqual([]);
+    await ctx.close();
+  });
+
+  test("every field takes a 16px font and the right keyboard", async ({ browser }) => {
+    const ctx = await browser.newContext(phone);
+    const page = await ctx.newPage();
+    for (const path of ["/", "/contact"]) {
+      await page.goto(path);
+      const fields = await page.evaluate(() =>
+        [...document.querySelectorAll("input:not([tabindex='-1']):not([type=hidden]), textarea")].map(
+          (el) => ({
+            name: (el as HTMLInputElement).name,
+            size: Number.parseFloat(getComputedStyle(el).fontSize),
+            touch: getComputedStyle(el).touchAction,
+          }),
+        ),
+      );
+      for (const f of fields) {
+        // Below 16px iOS Safari zooms the page the instant the field is
+        // focused, and leaves the visitor stranded on a zoomed page.
+        expect(f.size, `${path} ${f.name} is ${f.size}px, iOS will zoom on focus`).toBeGreaterThanOrEqual(16);
+        expect(f.touch, `${path} ${f.name} still has the 300ms double-tap delay`).toBe("manipulation");
+      }
+    }
+    await ctx.close();
+  });
+
+  test("no horizontal overflow at 320, the narrowest device still shipping", async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 320, height: 780 }, isMobile: true, hasTouch: true });
+    const page = await ctx.newPage();
+    for (const path of ["/", "/contact", "/thanks"]) {
+      await page.goto(path);
+      await page.waitForTimeout(400);
+      const over = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(over, `${path} scrolls sideways at 320px`).toBeLessThanOrEqual(0);
+    }
+    await ctx.close();
+  });
+});
+
 test.describe("the hero measure", () => {
   /**
    * R4 replaced the hero slitscan with a ruler that stretches under the

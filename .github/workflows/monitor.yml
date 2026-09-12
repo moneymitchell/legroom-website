@@ -90,7 +90,7 @@ jobs:
         run: |
           gen() {
             node -e '
-              const [preset, outputDir] = process.argv.slice(1);
+              const [form, outputDir] = process.argv.slice(1);
               const headers = {};
               if (process.env.CF_ACCESS_CLIENT_ID) {
                 headers["CF-Access-Client-Id"] = process.env.CF_ACCESS_CLIENT_ID;
@@ -102,7 +102,13 @@ jobs:
                     url: [process.env.TARGET],
                     numberOfRuns: 3,
                     settings: {
-                      preset,
+                      // Lighthouse's preset only accepts perf, experimental
+                      // and desktop. MOBILE IS THE DEFAULT and passing
+                      // preset: "mobile" fails the run outright with "Invalid
+                      // values". So desktop sets a preset and mobile sets
+                      // none, which is what the two committed lighthouserc
+                      // files do as well.
+                      ...(form === "desktop" ? { preset: "desktop" } : {}),
                       chromeFlags: "--no-sandbox --headless=new",
                       extraHeaders: headers,
                     },
@@ -122,7 +128,7 @@ jobs:
                   upload: { target: "filesystem", outputDir },
                 },
               };
-              require("node:fs").writeFileSync(`lhci.${preset}.json`, JSON.stringify(config, null, 2));
+              require("node:fs").writeFileSync(`lhci.${form}.json`, JSON.stringify(config, null, 2));
             ' "$1" "$2"
           }
           gen desktop .lh-desktop

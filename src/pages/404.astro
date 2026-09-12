@@ -24,7 +24,11 @@ import { site } from "@/content/site";
 <style>
   .page {
     padding: 88px 0 64px;
-    min-height: 60vh;
+    /* svh, not vh. vh measures the LARGEST viewport, the one you only get
+       once the address bar has collapsed, so on first paint a vh block is
+       taller than the screen and its bottom is cut off. svh is the smallest
+       viewport and always fits. */
+    min-height: 60svh;
   }
   h1 {
     font-size: clamp(44px, 6vw, 76px);

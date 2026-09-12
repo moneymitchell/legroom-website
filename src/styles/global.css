@@ -175,3 +175,44 @@ svg {
     opacity: 0;
   }
 }
+
+/* ===========================================================================
+   PHONE. 2026 pass, 2026-09-12.
+   Everything below is inside a coarse-pointer or a width query. Desktop reads
+   none of it, which is the invariant for this whole round.
+   ========================================================================= */
+
+/* Double-tap-to-zoom makes every button feel 300ms slow on iOS. Applied to
+   interactive things only: on body it would also kill pinch-to-zoom on the
+   page, which is an accessibility feature, not a nuisance. */
+a,
+button,
+[role="button"],
+input,
+select,
+textarea,
+summary,
+label {
+  touch-action: manipulation;
+}
+
+@media (pointer: coarse) {
+  /* There is no hover on a touch screen, so :active is the ONLY feedback a
+     tap can give. Without it a button looks identical before and after it was
+     pressed, and people press it twice. */
+  a:active,
+  button:active,
+  [role="button"]:active {
+    opacity: 0.72;
+  }
+}
+
+/* Anything pinned to an edge has to clear the home indicator and the notch.
+   Without this the sticky bar sits underneath the indicator on every modern
+   iPhone and the last few pixels are untappable and unreadable. */
+@supports (padding: env(safe-area-inset-bottom)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}

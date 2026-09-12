@@ -97,7 +97,14 @@ const jsonLd = {
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {/* interactive-widget=resizes-content: without it the on-screen keyboard
+        overlays the page, so on a short phone the submit button ends up
+        underneath it and the field you are typing into can be covered by it.
+        With it, the layout viewport shrinks and the form stays reachable. */}
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, interactive-widget=resizes-content"
+    />
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />

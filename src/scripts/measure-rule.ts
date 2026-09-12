@@ -298,6 +298,22 @@ export function mountMeasureRule(canvas: HTMLCanvasElement): () => void {
 
 /** Wires every [data-measure] canvas on the page. */
 export function initMeasureRules(): void {
+  /**
+   * NOT MOUNTED ON A TOUCH DEVICE.
+   *
+   * Both engines exist to answer a pointer. A phone has none, so every frame
+   * they draw is a frame nobody can influence: an animation loop running at
+   * 60fps in somebody's pocket, on their battery, for an effect that can only
+   * ever show its resting state. Mounting it and drawing one static frame was
+   * the alternative, and it is worse than not mounting, because the resting
+   * state is what the section looks like with the engine absent anyway.
+   *
+   * Checked with matchMedia rather than a width query: what matters is the
+   * input device, not the size of the window. A narrow desktop window still
+   * has a mouse and still gets the effect.
+   */
+  if (window.matchMedia?.("(pointer: coarse)").matches) return;
+
   for (const cv of document.querySelectorAll<HTMLCanvasElement>("canvas[data-measure]")) {
     mountMeasureRule(cv);
   }
