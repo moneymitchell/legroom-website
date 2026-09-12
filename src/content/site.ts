@@ -362,7 +362,7 @@ export const site = {
         firstName: "JD",
         lastName: "Worcester",
         role: "Founder, Creative, Growth Hacker",
-        school: "Santa Clara Univ · BS Management",
+        school: "Santa Clara · BS Management",
         socials: [
           { label: "LinkedIn", href: "https://www.linkedin.com/in/jdworcester/" },
           { label: "jdworcester.com", href: "https://jdworcester.com/" },
@@ -374,7 +374,7 @@ export const site = {
           { label: "Currently building", value: "Dotted", href: "#" },
           { label: "Superpowers", value: "Design & Growth" },
         ],
-        bio: "Former college athlete and OpenAI beta tester. Nothing beats finding a powerful tool before the rest of the world knows it exists. Found the cheat codes so you don’t have to.",
+        bio: "Former college athlete, early OpenAI beta tester. Spends his time finding the tool everyone else will be using in a year. Found the cheat codes so you don’t have to.",
         quote: "Every owner I talk to is doing four jobs. I want to hand three of them back.",
       },
       {
@@ -389,7 +389,7 @@ export const site = {
            could not be verified. School confirmed by JD, 2026-09-12. If the
            exact award is "MS Cybersecurity" or a dual degree, correct it here
            and in the bio together. */
-        school: "San Jose State Univ · MS Software Engineering",
+        school: "San Jose State · MS Software Engineering",
         socials: [{ label: "LinkedIn", href: "https://www.linkedin.com/in/chibuikem/" }],
         pills: ["Running", "Plants", "Lifting", "Traveling"],
         stats: [
@@ -401,7 +401,7 @@ export const site = {
           },
           { label: "Superpowers", value: "Full stack & security" },
         ],
-        bio: "Masters in software engineering and cybersecurity. Has lived on almost every continent, now currently holding it down in SF. Technical skills second to none. When Sean ships, you know you’re getting something great.",
+        bio: "Has lived on almost every continent and now builds from San Francisco. The rare engineer who is as careful as he is quick. When Sean ships something, it works, and it keeps working.",
         quote: "There’s always more money on the table, we just help you find it.",
       },
     ] as readonly Founder[],

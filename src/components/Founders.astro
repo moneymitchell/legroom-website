@@ -123,7 +123,14 @@ const { cta, founders } = site;
                             stroke-linecap="round"
                           />
                         </svg>
-                        {f.school}
+                        {/* The degree abbreviation is bound to the word after
+                            it with a non-breaking space. Left alone the chip
+                            wrapped "San Jose State · MS" / "Software
+                            Engineering", orphaning the MS from what it is a
+                            degree in. Binding only that one pair is enough:
+                            making each half rigid instead just pushed the whole
+                            chip past the edge of the card. */}
+                        {f.school.replace(/·\s*(\S+)\s/, "· $1\u00A0")}
                       </span>
                       <div class="socials">
                         {
@@ -409,8 +416,15 @@ const { cta, founders } = site;
     letter-spacing: 0.055em;
     text-transform: uppercase;
     color: var(--ink);
-    white-space: nowrap;
+    /* It must not be able to overflow the card, whatever anyone types into
+       site.ts. It was `white-space: nowrap` on an inline-flex box, which is a
+       chip that silently runs off the right edge the moment a degree is longer
+       than the shortest one anybody tested with. Wrapping is the ugly case;
+       spilling out of the card is the broken one. */
+    max-width: 100%;
+    white-space: normal;
   }
+
   .socials {
     display: flex;
     gap: 7px;
