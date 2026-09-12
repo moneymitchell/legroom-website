@@ -21,6 +21,7 @@
     "guard": "node scripts/deploy-guard.mjs pre && node scripts/deploy-guard.mjs post",
     "cf:dev": "astro build && wrangler dev",
     "db:migrate": "wrangler d1 migrations apply legroom-leads --remote",
+    "leads": "node scripts/leads.mjs",
     "test:pixels": "node scripts/compare-reference.mjs",
     "test:design": "node scripts/compare-design.mjs",
     "lh:mobile": "lhci autorun --config=lighthouserc.mobile.json",
