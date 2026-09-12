@@ -384,10 +384,13 @@ export const site = {
         firstName: "Sean",
         lastName: "Ajulu-Okeke",
         role: "Founder, Builder, Innovator",
-        school: "Santa Clara Univ · BS Management",
-        // JD’s personal site was on this card in the reference. Removed.
-        // Sean’s own LinkedIn URL is still needed; this one is JD’s.
-        socials: [{ label: "LinkedIn", href: "https://www.linkedin.com/in/jdworcester/" }],
+        /* The degree wording is FROM SEAN'S BIO BELOW, not read off his
+           LinkedIn: LinkedIn answers automated requests with HTTP 999, so it
+           could not be verified. School confirmed by JD, 2026-09-12. If the
+           exact award is "MS Cybersecurity" or a dual degree, correct it here
+           and in the bio together. */
+        school: "San Jose State Univ · MS Software Engineering",
+        socials: [{ label: "LinkedIn", href: "https://www.linkedin.com/in/chibuikem/" }],
         pills: ["Running", "Plants", "Lifting", "Traveling"],
         stats: [
           { label: "In the game since", value: "1994" },
