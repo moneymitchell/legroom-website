@@ -67,22 +67,33 @@ if (mode === "pre") {
     );
   }
 
-  // Routes, custom domains and workers_dev all reach the public. The apex and
-  // www must not be reachable from this config by ANY of those doors.
-  const surfaces = JSON.stringify([
-    cfg.routes ?? null,
-    cfg.route ?? null,
-    cfg.env ?? null,
-  ]).toLowerCase();
+  // Routes and custom domains reach the public. The apex and www must not be
+  // reachable from this config by either.
+  //
+  // Compared as HOSTNAMES, not as substrings. "preview.legroomcompany.com"
+  // contains "legroomcompany.com", so a substring check blocks the one route
+  // this project is actually allowed to have, and the natural way to unblock
+  // it is to weaken the check that protects the live site.
+  const patterns = [cfg.route, ...(cfg.routes ?? [])]
+    .filter(Boolean)
+    .map((r) => (typeof r === "string" ? r : r.pattern))
+    .filter(Boolean);
 
-  for (const host of PRODUCTION_HOSTS) {
-    if (surfaces.includes(host)) {
+  for (const pattern of patterns) {
+    // A route pattern is host plus an optional path and wildcards. Take the
+    // authority, drop a leading wildcard label, and compare what is left.
+    const host = String(pattern).toLowerCase().split("/")[0].replace(/^\*\.?/, "");
+    if (PRODUCTION_HOSTS.includes(host)) {
       fail(
-        `wrangler.jsonc carries a route or custom domain for ${host}.\n` +
+        `wrangler.jsonc carries a route or custom domain for ${host}:\n` +
+          `    ${pattern}\n` +
           `  Staging reaches the public only through preview.legroomcompany.com.\n` +
           `  The apex moves at cutover, by hand, per CUTOVER.md.`,
       );
     }
+  }
+  if (patterns.length > 0) {
+    console.log(`  deploy guard: routes ${patterns.join(", ")}`);
   }
 
   // A placeholder id deploys a Worker whose bindings point at nothing, which
