@@ -313,6 +313,46 @@ Nothing logs a full submission. IPs are SHA-256 hashed before they reach the rat
 4. `npm run test:design` if you touched anything visual.
 5. `npm run lh` if you touched anything that ships bytes.
 
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push to any branch and on every pull
+request into `main`. Eleven named steps, so a red run tells you what broke from
+the job list without opening a log: typecheck, `astro check`, build, the visual
+regression, the full Playwright suite, Lighthouse desktop and Lighthouse
+mobile. Concurrency is keyed on the ref and cancels in progress, so a fast
+follow-up push does not queue behind the run it supersedes.
+
+Every run writes the pixel table and the Lighthouse medians to the job summary,
+green ones included. On a failure it uploads the Playwright report and the
+`-actual` / `-diff` PNGs for all seven sections, which is why the pixel step
+runs with `--write`: a red visual gate that hands you a percentage and nothing
+to look at is not worth having.
+
+`test:design` and `check:csp` are not in CI. The first needs the eight
+reference HTML boards from `../handoff`, outside this repo; `test:pixels`
+covers the same ground against baselines that are in it. The second needs real
+Cloudflare credentials and runs against the deployed host instead.
+
+Two things had to be true before any of this could work, and both will bite
+again if they are undone:
+
+- **The baselines live in `tests/baselines/`**, not in `../handoff`. A visual
+  regression gate that can only run on the laptop that shot the baselines is a
+  habit, not a gate. See `tests/baselines/README.md`.
+- **Nothing may serve the build with `astro preview` from a script.** It
+  backgrounds itself the moment stdout is not a TTY and takes a lock file, so
+  the spawned process exits at once and Playwright dies with "Process from
+  config.webServer exited early" before a single test runs. `--no-background`
+  does not change it. Use `npm run serve`.
+
+`.github/workflows/monitor.yml` is the slow alarm: weekly Lighthouse and a link
+check against the deployed host, on lower thresholds than CI because it
+measures the real thing over the public internet. It refuses to run if it
+reaches a Cloudflare Access login page instead of the site, which is otherwise
+a page that scores a cheerful 100.
+
+---
+
 ## Deployment
 
 `LAUNCH.md` is the runbook. Short version:
