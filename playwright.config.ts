@@ -29,8 +29,17 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
     },
   ],
+  /**
+   * `npm run serve`, NOT `astro preview`. Astro's preview server backgrounds
+   * itself the moment stdout is not a TTY, which is what it sees when
+   * Playwright spawns it and on every CI runner: the spawned process exits at
+   * once and Playwright reports "Process from config.webServer exited early"
+   * before a single test runs. It never showed up locally, because
+   * reuseExistingServer meant every local run silently attached to a preview
+   * somebody had already started by hand. See scripts/serve-dist.mjs.
+   */
   webServer: {
-    command: "npm run preview -- --port 4321 --host 127.0.0.1",
+    command: "npm run serve -- --port 4321 --host 127.0.0.1",
     url: "http://127.0.0.1:4321",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

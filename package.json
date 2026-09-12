@@ -8,6 +8,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
+    "serve": "node scripts/serve-dist.mjs",
     "check": "astro check",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p worker/tsconfig.json",
     "test:visual": "playwright test tests/visual.spec.ts",

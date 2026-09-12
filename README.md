@@ -21,7 +21,7 @@ below.
 To work on anything that will be verified, build first:
 
 ```bash
-npm run build && npm run preview     # then the gates below run against :4321
+npm run build && npm run serve       # then the gates below run against :4321
 ```
 
 **Every gate runs against the production build, never the dev server.** A pass
@@ -36,7 +36,8 @@ this site at least once.
 | `npm run test` | The full Playwright suite, 75 tests. | Visual behaviour, a11y, copy, analytics, booking. |
 | `npm run dev` | Astro dev server on :4321. | Fast, but nothing is verified against it. See the note below. |
 | `npm run build` | Static build to `./dist`. | What every gate and every deploy actually runs against. |
-| `npm run preview` | Serve `./dist` on :4321. | The target for the Playwright suite and both comparators. |
+| `npm run preview` | Astro's own preview server on :4321. | Backgrounds itself off a TTY and takes a lock. Fine by hand, unusable from a script. Use `serve`. |
+| `npm run serve` | Foreground static server for `./dist`. | What Playwright and the comparators run against, in CI and locally. See `scripts/serve-dist.mjs`. |
 | `npm run check` | `astro check`: types plus template and prop checking. |  |
 | `npm run typecheck` | `tsc --noEmit` over `src/` and `worker/`, two configs. |  |
 | `npm run test:visual` | Just `tests/visual.spec.ts`. |  |
@@ -62,8 +63,11 @@ npm run typecheck && npm run check && npm run build && npm test && npm run test:
 npm run lh && npm run lh:mobile && npm run lh:report
 ```
 
+`npm test` and `npm run lh` start and stop their own servers. `test:pixels`
+and `test:design` do not, so they need `npm run serve` already running.
+
 `check:csp` is the one gate that is not in that chain, because it needs a
-second shell:
+second shell and real Cloudflare credentials:
 
 ```bash
 npx wrangler dev --port 8788      # shell one

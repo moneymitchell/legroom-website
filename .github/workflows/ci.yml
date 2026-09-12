@@ -1,0 +1,154 @@
+# Every gate that can fail this site, on every push.
+#
+# The steps are deliberately separate rather than one chained command, so a red
+# run names what broke in the job list without anyone opening the log.
+#
+# What is NOT here, and why:
+#   test:design  needs the eight reference HTML boards served from ../handoff,
+#                which is outside this repository. It stays a local check.
+#                test:pixels covers the same ground against baselines that do
+#                live in the repo, and it is the one that gates.
+#   check:csp    needs `wrangler dev`, which needs real Cloudflare credentials.
+#                It runs against the deployed host in the live QA sweep instead.
+name: CI
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+
+# A fast follow-up push should cancel the run it supersedes rather than queue
+# behind it. Keyed on the ref, so main and a branch never cancel each other.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # PUBLIC by design: both are compiled into the HTML and visible in view
+  # source. Neither is a secret and neither belongs in the secrets store.
+  #
+  # The fallback is what keeps a fork or a fresh clone green. Without a cal
+  # link the build silently points every booking CTA at /contact, and
+  # tests/booking.spec.ts fails the run for it, which is the correct
+  # behaviour and a miserable first CI run to debug. Set the repo variable to
+  # override.
+  PUBLIC_CAL_LINK: ${{ vars.PUBLIC_CAL_LINK || 'https://cal.com/jdworcester/15min' }}
+  PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.PUBLIC_TURNSTILE_SITE_KEY }}
+
+jobs:
+  gates:
+    name: gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # .nvmrc is the single source of truth for the Node version, shared
+          # with Cloudflare Workers Builds. engines in package.json agrees.
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright chromium
+        # One browser, because playwright.config.ts defines exactly one
+        # project and it is Desktop Chrome. Installing all three costs about
+        # ninety seconds a run to test nothing.
+        run: npx playwright install --with-deps chromium
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Astro check
+        run: npm run check
+
+      - name: Build
+        run: npm run build
+
+      - name: Visual regression against the approved design
+        # --write so the actual and diff PNGs exist to upload. Without it a
+        # red pixel gate gives you a percentage and nothing to look at. It
+        # writes only to tests/__screenshots__ and can never touch a baseline.
+        #
+        # The comparator needs the built site served; it does not start a
+        # server of its own the way the Playwright config does. `npm run serve`
+        # and not `astro preview`: preview backgrounds itself off a TTY and
+        # takes a lock, so it can neither be killed by its own PID nor let the
+        # Playwright step start a server afterwards. See scripts/serve-dist.mjs.
+        # Status is captured explicitly so the kill cannot swallow a failure.
+        run: |
+          npm run serve -- --port 4321 --host 127.0.0.1 &
+          server=$!
+          for i in $(seq 1 30); do
+            curl -sf -o /dev/null http://127.0.0.1:4321/ && break
+            sleep 1
+          done
+          # Redirected, not piped. A pipe here would hand the step tee's exit
+          # status and a failing comparison would go green.
+          set +e
+          npm run test:pixels -- --write > pixels.txt 2>&1
+          status=$?
+          set -e
+          cat pixels.txt
+          kill "$server" 2>/dev/null || true
+          exit $status
+
+      - name: Playwright
+        # Starts and stops its own server, see webServer in
+        # playwright.config.ts. Nothing to manage here, but it does mean the
+        # step above has to leave port 4321 free.
+        run: npm test
+
+      - name: Lighthouse desktop
+        run: npm run lh
+
+      - name: Lighthouse mobile
+        run: npm run lh:mobile
+
+      - name: Report the numbers
+        # Runs even on failure: on a red run these are usually the context you
+        # need, and a green run should still show its work rather than only
+        # a checkmark.
+        if: always()
+        run: |
+          {
+            echo "## Gates"
+            echo
+            if [ -f pixels.txt ]; then
+              echo "### Visual regression"
+              echo '```'
+              cat pixels.txt
+              echo '```'
+            fi
+            echo "### Lighthouse"
+            echo '```'
+            npm run --silent lh:report || echo "no Lighthouse output"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.run_id }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload the visual diffs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diffs-${{ github.run_id }}
+          path: tests/__screenshots__/
+          retention-days: 7
+          if-no-files-found: ignore

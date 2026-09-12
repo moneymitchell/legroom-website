@@ -23,7 +23,17 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const REF = join(root, "..", "handoff", "reference", "screens");
+/**
+ * The approved-design baselines, in the repo. They used to be read from
+ * ../handoff/reference/screens, which is outside the repository, so this gate
+ * could only ever run on the machine that shot them: CI has no handoff/
+ * directory and the comparator counts a missing baseline as a failure. See
+ * tests/baselines/README.md. REF_DIR overrides it for a one-off comparison
+ * against a freshly re-shot set.
+ */
+const REF = process.env.REF_DIR
+  ? join(process.cwd(), process.env.REF_DIR)
+  : join(root, "tests", "baselines");
 const OUT = join(root, "tests", "__screenshots__");
 
 const args = process.argv.slice(2);

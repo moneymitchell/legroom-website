@@ -22,5 +22,12 @@ tests/__screenshots__/
 .lighthouseci*
 qa-results/
 
+# scratch written by the CI workflows, never by a local run
+pixels.txt
+body.html
+lhci.*.json
+.lh-desktop/
+.lh-mobile/
+
 .DS_Store
 *.log
