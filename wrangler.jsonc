@@ -5,14 +5,27 @@
   "compatibility_date": "2026-09-10",
   "compatibility_flags": ["nodejs_compat"],
 
-  // The static site. Requests that match a file are served straight from the
-  // asset store; anything else reaches the Worker, which is how /api/lead works
-  // while the rest of the site stays static.
+  // The static site.
+  //
+  // run_worker_first is TRUE, and that is load-bearing. By default a request
+  // matching a file is answered by the asset store and never reaches the
+  // Worker at all, which meant the hostname-conditional crawl ban in
+  // worker/index.ts ran for exactly nothing: the first workers.dev deploy
+  // served / and /robots.txt with no X-Robots-Tag and with the production
+  // robots.txt advertising the real sitemap. Staging would have been fully
+  // indexable while looking, from the code, like it was not.
+  //
+  // With this set, every request enters the Worker, which decides on the
+  // crawl ban and then calls env.ASSETS.fetch for anything that is not
+  // /api/lead. The asset store still applies public/_headers to what it
+  // returns. The cost is one Worker invocation per request, roughly 5ms of
+  // startup, on a site that serves a few dozen files.
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
     "not_found_handling": "404-page",
-    "html_handling": "auto-trailing-slash"
+    "html_handling": "auto-trailing-slash",
+    "run_worker_first": true
   },
 
   "observability": { "enabled": true },
@@ -30,11 +43,9 @@
     {
       "binding": "DB",
       "database_name": "legroom-leads",
-      // MUST BE REPLACED before `wrangler deploy`, with the id printed by
-      // `wrangler d1 create legroom-leads`. The all-zero value below is a
-      // well-formed placeholder so `wrangler dev` works out of the box; it
-      // does not point at a real database. See LAUNCH.md step 0.
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      // Created 2026-09-12, region WNAM. A database id is not a secret: it
+      // names a resource that only this account's credentials can reach.
+      "database_id": "11f7b80c-b1e4-44d2-bf30-983374fa24fb",
       "migrations_dir": "migrations"
     }
   ],
@@ -42,9 +53,8 @@
   "kv_namespaces": [
     {
       "binding": "LEAD_RATE",
-      // MUST BE REPLACED before `wrangler deploy`, with the id printed by
-      // `wrangler kv namespace create LEAD_RATE`. See LAUNCH.md step 0.
-      "id": "0000000000000000000000000000000a"
+      // Created 2026-09-12. Same as the D1 id: a resource name, not a secret.
+      "id": "5671542426ae4351843c0575f3a5d96b"
     }
   ]
 }

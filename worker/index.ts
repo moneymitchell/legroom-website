@@ -49,6 +49,54 @@ type LeadInput = {
   token?: string;
 };
 
+/**
+ * ============================================================================
+ * WHAT IS AND IS NOT PRODUCTION.
+ *
+ * Hard-coded, deliberately, and not derived from env.SITE_URL or from any
+ * other value that a deploy could get wrong. Everything else in this file is
+ * written to fail closed. This one is not, because its two failure modes are
+ * not remotely symmetrical:
+ *
+ *   staging gets indexed          duplicate content, embarrassing, fixed in
+ *                                 days once anyone notices
+ *   noindex reaches production    the real site falls out of Google, nobody
+ *                                 notices for weeks, and it takes weeks more
+ *                                 to come back
+ *
+ * The second is the worst outcome available in this project. So the rule is
+ * not "fail safe", it is "be unambiguous": a literal list, greppable, that no
+ * environment variable and no deploy can move. Adding a hostname here is a
+ * code change that goes through review and CI.
+ *
+ * tests/robots.spec.ts asserts the header appears on a preview hostname and is
+ * ABSENT on each of these, and that env.SITE_URL's host is one of them, which
+ * is what catches the two drifting apart.
+ * ========================================================================= */
+const PRODUCTION_HOSTS = new Set(["legroomcompany.com", "www.legroomcompany.com"]);
+
+/** Anything that is not the live site: preview, workers.dev, a branch URL. */
+const isStaging = (hostname: string) => !PRODUCTION_HOSTS.has(hostname.toLowerCase());
+
+/**
+ * Staging's robots.txt. The shipped one at dist/robots.txt allows crawling and
+ * points at the production sitemap, which is exactly right for production and
+ * exactly wrong everywhere else, so on a staging host it is replaced rather
+ * than edited. Nothing about the build changes.
+ */
+const STAGING_ROBOTS = "User-agent: *\nDisallow: /\n";
+
+/**
+ * Re-wrap a response with the crawl ban. Headers on an ASSETS response are
+ * immutable, hence the copy. A 304 or a 204 carries a null body and
+ * `new Response(null, res)` is correct for both.
+ */
+function denyIndexing(res: Response): Response {
+  const out = new Response(res.body, res);
+  out.headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
+  return out;
+}
+
 const RATE_LIMIT_WITH_TOKEN = 5; // per window, when Turnstile vouched for them
 const RATE_LIMIT_NO_TOKEN = 2; // per window, when it could not
 const RATE_WINDOW_SECONDS = 3600;
@@ -57,16 +105,32 @@ const MIN_FILL_MS = 1200; // faster than this is not a human typing
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+    const staging = isStaging(url.hostname);
+
+    // Applied to EVERY response, not only to HTML. A crawler that reaches an
+    // asset, the sitemap or the API on a staging host gets told the same
+    // thing, and the decision is made here rather than at build time so the
+    // identical artifact can be promoted to production unchanged.
+    if (staging && url.pathname === "/robots.txt") {
+      return denyIndexing(
+        new Response(STAGING_ROBOTS, {
+          headers: { "content-type": "text/plain; charset=utf-8" },
+        }),
+      );
+    }
 
     if (url.pathname === "/api/lead") {
       if (request.method !== "POST") {
-        return json({ ok: false, error: "method" }, 405, { allow: "POST" });
+        const res = json({ ok: false, error: "method" }, 405, { allow: "POST" });
+        return staging ? denyIndexing(res) : res;
       }
-      return handleLead(request, env, ctx);
+      const res = await handleLead(request, env, ctx);
+      return staging ? denyIndexing(res) : res;
     }
 
     // everything else is the static site
-    return env.ASSETS.fetch(request);
+    const res = await env.ASSETS.fetch(request);
+    return staging ? denyIndexing(res) : res;
   },
 } satisfies ExportedHandler<Env>;
 
