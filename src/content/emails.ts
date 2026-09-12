@@ -74,6 +74,26 @@ export const mail = {
       return lines.join("\n");
     },
   },
+
+  /* --- to JD's phone ------------------------------------------------------- */
+  sms: {
+    /**
+     * Sent through a carrier email-to-SMS gateway, so it is an email that
+     * arrives as a text and needs no SMS provider account.
+     *
+     * ONE LINE, and short. Gateways cut the message around 160 characters,
+     * several of them prepend the subject and the sender address to the body,
+     * and none of them render anything. So this carries only the two facts
+     * worth waking someone up for: who, and from which form. The full detail
+     * is in the email that went out alongside it.
+     */
+    subject: "Lead",
+    body: (lead: LeadFields) =>
+      `Legroom ${lead.source} lead: ${lead.email}${lead.name ? ` (${lead.name})` : ""}`.slice(
+        0,
+        140,
+      ),
+  },
 } as const;
 
 /**

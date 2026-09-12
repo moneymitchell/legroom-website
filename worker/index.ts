@@ -32,6 +32,13 @@ export interface Env {
   TURNSTILE_SECRET_KEY?: string;
   /** Wrangler secret. */
   RESEND_API_KEY?: string;
+  /**
+   * Wrangler secret. A carrier email-to-SMS gateway address, so a text needs
+   * no SMS provider: 5551234567@vtext.com and the like. A SECRET rather than a
+   * var because it is a personal phone number and wrangler.jsonc is public.
+   * Unset means no text is sent and nothing else changes.
+   */
+  ALERT_SMS_TO?: string;
   /** Plain vars, set in wrangler.jsonc. */
   NOTIFY_TO?: string;
   MAIL_FROM?: string;
@@ -367,7 +374,23 @@ async function sendMail(lead: LeadFields, env: Env): Promise<void> {
     text: mail.alert.body(lead),
   };
 
-  for (const payload of [toSubmitter, toJd]) {
+  const payloads: Record<string, unknown>[] = [toSubmitter, toJd];
+
+  // 3. JD's phone, through a carrier email-to-SMS gateway, when one is set.
+  //    Sent LAST on purpose: it is the least important of the three and the
+  //    free tier is 100 messages a day across all of them, so if a busy day
+  //    ever hits the cap it should be the text that is missing, not the
+  //    confirmation the person who filled the form is waiting for.
+  if (env.ALERT_SMS_TO) {
+    payloads.push({
+      from: env.MAIL_FROM,
+      to: [env.ALERT_SMS_TO],
+      subject: mail.sms.subject,
+      text: mail.sms.body(lead),
+    });
+  }
+
+  for (const payload of payloads) {
     await send(payload, env);
   }
 }
