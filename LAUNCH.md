@@ -232,9 +232,10 @@ Cloudflare's captcha. Free, and it does not make people identify traffic lights.
 
 1. Dashboard → **Turnstile → Add widget**.
    - Name: `legroom-web`
-   - Hostnames: `legroomcompany.com`, `www.legroomcompany.com`, and `localhost` for testing
+   - Hostnames: `legroomcompany.com`, `www.legroomcompany.com`, **`preview.legroomcompany.com`**, and `localhost` for testing
+   - The preview host is not optional. Turnstile validates the hostname a token was minted on, so leaving staging out means the widget renders, the token mints, and the Worker rejects every single submission with no visible reason. Staging is where the form is tested, so this is the hostname that matters most right now.
    - Widget mode: **Managed**. It shows a checkbox only when Cloudflare is unsure, which for your traffic will be almost never. Invisible mode gives you no way to recover a false positive; non-interactive is stricter than you need.
-2. Copy the **Site Key** (starts `0x4AAAAAAA`) into `.env.local` as `PUBLIC_TURNSTILE_SITE_KEY`, and into the Cloudflare build environment variables if you wire up Workers Builds.
+2. Copy the **Site Key** (starts `0x4AAAAAAA`) into `.env` as `PUBLIC_TURNSTILE_SITE_KEY`, and into the Cloudflare build environment variables if you wire up Workers Builds.
 3. Copy the **Secret Key** into `npx wrangler secret put TURNSTILE_SECRET_KEY`.
 4. `npm run build && npx wrangler deploy`.
 
