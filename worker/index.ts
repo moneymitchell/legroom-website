@@ -33,6 +33,17 @@ export interface Env {
   /** Wrangler secret. */
   RESEND_API_KEY?: string;
   /**
+   * Wrangler secret. The Google Apps Script web app URL that appends a row to
+   * the intake Sheet. Unset means no row is written and nothing else changes.
+   */
+  SHEET_WEBHOOK_URL?: string;
+  /**
+   * Wrangler secret. A shared token echoed in the payload. An Apps Script web
+   * app deployed as "anyone with the link" is a public endpoint, so without
+   * this anybody who ever sees the URL can write rows into the Sheet.
+   */
+  SHEET_WEBHOOK_SECRET?: string;
+  /**
    * Wrangler secret. A carrier email-to-SMS gateway address, so a text needs
    * no SMS provider: 5551234567@vtext.com and the like. A SECRET rather than a
    * var because it is a personal phone number and wrangler.jsonc is public.
@@ -224,16 +235,23 @@ async function handleLead(request: Request, env: Env, ctx: ExecutionContext): Pr
   //    what makes the reply feel personal is the writing, not the timing.
   //    Resend's free tier is 3,000 a month but only 100 a day, and the daily
   //    cap is the one that bites.
+  const fields = {
+    email: row.email,
+    name: row.name,
+    message: row.message,
+    source: row.source,
+    userAgent: row.user_agent,
+    createdAt: row.created_at,
+  };
+
+  // The Sheet row goes out alongside the mail, not after it. Both are
+  // independent: a Resend outage must not cost the Sheet row, and a Sheet that
+  // is down must not cost the emails.
+  ctx.waitUntil(appendToSheet(fields, env));
+
   ctx.waitUntil(
     sendMail(
-      {
-        email: row.email,
-        name: row.name,
-        message: row.message,
-        source: row.source,
-        userAgent: row.user_agent,
-        createdAt: row.created_at,
-      },
+      fields,
       env,
     ),
   );
@@ -392,6 +410,46 @@ async function sendMail(lead: LeadFields, env: Env): Promise<void> {
 
   for (const payload of payloads) {
     await send(payload, env);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   The intake Sheet.
+
+   D1 is the record; this is the surface. A row in a Sheet is somewhere a
+   person can actually LOOK, sort, annotate and share, which a database and a
+   terminal command are not. It is deliberately the last thing that happens and
+   it can never affect the submission: the lead is already in D1, the emails
+   have already gone, and this runs inside waitUntil.
+
+   Google Apps Script rather than Zapier or a service account. It is free, it
+   lives in the Workspace that already holds the Sheet, there is no third party
+   holding prospect data, and there is no API key to rotate. The cost is that
+   the web app is a public URL, which is what SHEET_WEBHOOK_SECRET is for.
+   ----------------------------------------------------------------------- */
+
+async function appendToSheet(lead: LeadFields, env: Env): Promise<void> {
+  if (!env.SHEET_WEBHOOK_URL) return;
+  try {
+    const res = await fetch(env.SHEET_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        secret: env.SHEET_WEBHOOK_SECRET ?? "",
+        created_at: lead.createdAt,
+        source: lead.source,
+        email: lead.email,
+        name: lead.name ?? "",
+        message: lead.message ?? "",
+      }),
+      // Apps Script answers a POST with a 302 to script.googleusercontent.com.
+      // Without following it the response is the redirect, not the result, and
+      // a rejected write would look identical to a successful one.
+      redirect: "follow",
+    });
+    if (!res.ok) console.warn(`sheet webhook ${res.status}`);
+  } catch (err) {
+    console.warn("sheet webhook threw", err instanceof Error ? err.message : "unknown");
   }
 }
 
