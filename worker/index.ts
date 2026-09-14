@@ -60,6 +60,9 @@ export interface Env {
 type LeadInput = {
   email: string;
   name?: string;
+  first_name?: string;
+  last_name?: string;
+  website?: string;
   message?: string;
   source?: string;
   company?: string;
@@ -200,10 +203,20 @@ async function handleLead(request: Request, env: Env, ctx: ExecutionContext): Pr
   }
 
   // 6. persist first, so a mail failure can never lose the lead
+  const first = clamp(input.first_name, 80);
+  const last = clamp(input.last_name, 80);
+
   const row = {
     id: crypto.randomUUID(),
     email,
-    name: clamp(input.name, 120),
+    first_name: first,
+    last_name: last,
+    // `name` is still written, holding the two joined, because everything
+    // downstream reads it: the alert subject and body, the Sheet, npm run
+    // leads. input.name is the fallback for the inline capture, which has
+    // never collected a name and still posts the old shape.
+    name: clamp([first, last].filter(Boolean).join(" ") || input.name, 160),
+    website: normaliseUrl(input.website),
     message: clamp(input.message, 4000),
     source: clamp(input.source, 40) ?? "unknown",
     user_agent: clamp(request.headers.get("user-agent") ?? undefined, 400),
@@ -212,13 +225,17 @@ async function handleLead(request: Request, env: Env, ctx: ExecutionContext): Pr
 
   try {
     await env.DB.prepare(
-      `INSERT INTO leads (id, email, name, message, source, user_agent, created_at)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)`,
+      `INSERT INTO leads
+         (id, email, first_name, last_name, name, website, message, source, user_agent, created_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
     )
       .bind(
         row.id,
         row.email,
+        row.first_name ?? null,
+        row.last_name ?? null,
         row.name ?? null,
+        row.website ?? null,
         row.message ?? null,
         row.source,
         row.user_agent ?? null,
@@ -237,6 +254,9 @@ async function handleLead(request: Request, env: Env, ctx: ExecutionContext): Pr
   //    cap is the one that bites.
   const fields = {
     email: row.email,
+    firstName: row.first_name,
+    lastName: row.last_name,
+    website: row.website,
     name: row.name,
     message: row.message,
     source: row.source,
@@ -257,6 +277,31 @@ async function handleLead(request: Request, env: Env, ctx: ExecutionContext): Pr
   );
 
   return reply(wantsJson, { ok: true }, 200, env);
+}
+
+/**
+ * "acme.com" is what a person types. A URL is what everything downstream
+ * wants. The form field is deliberately type="text" rather than type="url",
+ * because a url input rejects a bare domain and shows a validation error to
+ * somebody who just typed their own address correctly, so the tidying happens
+ * here instead.
+ *
+ * Anything that does not look like a hostname is dropped rather than stored.
+ * A junk value in this column is worse than an empty one: it is the field the
+ * pre-call research starts from, and following a bad link wastes the exact
+ * time this is meant to save.
+ */
+function normaliseUrl(raw?: string): string | undefined {
+  const v = clamp(raw, 300)?.trim();
+  if (!v) return undefined;
+  const withScheme = /^https?:\/\//i.test(v) ? v : `https://${v}`;
+  try {
+    const u = new URL(withScheme);
+    if (!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(u.hostname)) return undefined;
+    return u.origin + (u.pathname === "/" ? "" : u.pathname);
+  } catch {
+    return undefined;
+  }
 }
 
 /* --- input ---------------------------------------------------------------- */
@@ -380,7 +425,7 @@ async function sendMail(lead: LeadFields, env: Env): Promise<void> {
     to: [lead.email],
     reply_to: replyTo,
     subject: mail.submitter.subject,
-    text: mail.submitter.body({ bookingUrl }),
+    text: mail.submitter.body({ bookingUrl, firstName: lead.firstName, website: lead.website }),
   };
 
   // 2. JD. Reply-To is the submitter, so hitting reply answers them.
@@ -388,7 +433,7 @@ async function sendMail(lead: LeadFields, env: Env): Promise<void> {
     from: env.MAIL_FROM,
     to: [env.NOTIFY_TO],
     reply_to: lead.email,
-    subject: mail.alert.subject(lead.email),
+    subject: mail.alert.subject(lead),
     text: mail.alert.body(lead),
   };
 
@@ -438,8 +483,10 @@ async function appendToSheet(lead: LeadFields, env: Env): Promise<void> {
         secret: env.SHEET_WEBHOOK_SECRET ?? "",
         created_at: lead.createdAt,
         source: lead.source,
+        first_name: lead.firstName ?? "",
+        last_name: lead.lastName ?? "",
         email: lead.email,
-        name: lead.name ?? "",
+        website: lead.website ?? "",
         message: lead.message ?? "",
       }),
       // Apps Script answers a POST with a 302 to script.googleusercontent.com.

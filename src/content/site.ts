@@ -429,12 +429,35 @@ export const site = {
     eyebrow: "Send us a note",
     headline: "Tell us what is eating the week.",
     lead: "One email back from a real person. If a breakdown makes sense we will send a booking link with it.",
-    nameLabel: "Your name",
-    namePlaceholder: "Jane Rivera",
+    /* R5. Five fields, and each one earns its place or it is not here.
+
+       First name is required because it is what makes the confirmation email
+       sound like a person wrote it. Last name is optional: it is worth having
+       on the record and it is worth nothing on a fifteen minute call, so it
+       must never be the reason somebody abandons.
+
+       Website is the field that changes what the call is worth. It is the one
+       input the teardown work actually needs, it costs the visitor no thought
+       because they know their own URL, and it means the call starts from
+       evidence instead of questions. Optional on purpose: a required field
+       somebody skips is a lead nobody got.
+
+       The message box asks a QUESTION rather than saying "Message". A blank
+       box labelled Message gets "Hi, interested in learning more", which tells
+       you nothing and wastes the first five minutes of the call. */
+    firstNameLabel: "First name",
+    firstNamePlaceholder: "Jane",
+    lastNameLabel: "Last name",
+    lastNameOptional: "optional",
+    lastNamePlaceholder: "Rivera",
     emailLabel: "Your email",
     emailPlaceholder: "you@yourcompany.com",
-    messageLabel: "What’s going on",
-    messagePlaceholder: "The part of the week that keeps disappearing.",
+    websiteLabel: "Company website",
+    websiteOptional: "optional, and the most useful thing you can give us",
+    websitePlaceholder: "yourcompany.com",
+    messageLabel: "What part of the week keeps disappearing?",
+    messageOptional: "optional",
+    messagePlaceholder: "Quoting, scheduling, chasing invoices, answering the same question forty times.",
     submit: "Send it",
     back: "Back to the top",
   },

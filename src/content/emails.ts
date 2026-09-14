@@ -17,6 +17,9 @@
  * ========================================================================= */
 
 export type LeadFields = {
+  firstName?: string | undefined;
+  lastName?: string | undefined;
+  website?: string | undefined;
   email: string;
   name?: string | undefined;
   message?: string | undefined;
@@ -38,16 +41,33 @@ export const mail = {
      * Four short lines. What it is, the link on its own line, a way out that
      * is not the link, and a name.
      */
-    body: ({ bookingUrl }: { bookingUrl: string }) =>
+    body: ({ bookingUrl, firstName, website }: {
+      bookingUrl: string;
+      firstName?: string | undefined;
+      website?: string | undefined;
+    }) =>
       [
-        "Thanks for reaching out.",
+        // The name is the cheapest warmth available and it is free, because
+        // they just typed it. No name means the inline capture, which only
+        // ever asked for an email, so it falls back rather than greeting
+        // nobody.
+        firstName ? `Thanks for reaching out, ${firstName}.` : "Thanks for reaching out.",
         "",
-        "It is 15 minutes on how work actually moves through your business. We find the most expensive thing your team is doing by hand and tell you what it is costing you. No pitch, and you keep the number either way.",
+        "It’s 15 minutes on how work actually moves through your business. We find the most expensive thing your team is doing by hand and tell you what it’s costing you. No pitch, and you keep the number either way.",
         "",
         "Pick a time:",
         bookingUrl,
         "",
-        "Not ready to book? Reply to this email with your website and I will take a look before we talk.",
+        // Two different next lines, because they are in two different places.
+        // Someone who gave a website has already done the thing we would
+        // otherwise ask for, so asking again reads as though nobody looked.
+        website
+          ? `I’ll have a look at ${website.replace(/^https?:\/\//, "")} before we talk, so we can skip the background and get to the part that costs you money.`
+          : "Not ready to book? Reply to this email with your website and I’ll take a look before we talk.",
+        "",
+        // Says what happens if they do nothing. Sets the expectation, and
+        // gives the follow-up a reason to exist that isn't a cold nudge.
+        "If I don’t hear back I’ll follow up once next week, then leave you alone.",
         "",
         "JD",
       ].join("\n"),
@@ -56,12 +76,20 @@ export const mail = {
   /* --- to JD --------------------------------------------------------------- */
   alert: {
     /** The address is in the subject so it is readable on a lock screen. */
-    subject: (email: string) => `New breakdown request: ${email}`,
+    /* The source is in the subject because it is the only thing that changes
+       how you read the rest of it. "breakdown" is someone who dropped an email
+       into the inline capture mid-page; "contact" is someone who went to the
+       contact page and wrote something. Different intent, different reply. */
+    subject: (lead: LeadFields) =>
+      `New ${lead.source} lead: ${lead.firstName || lead.name || lead.email}`,
 
     body: (lead: LeadFields) => {
       const lines = [
-        `Email:      ${lead.email}`,
         lead.name ? `Name:       ${lead.name}` : null,
+        `Email:      ${lead.email}`,
+        // Directly under the email, because it is the first thing you act on:
+        // it is what the pre-call research starts from.
+        lead.website ? `Website:    ${lead.website}` : null,
         `Source:     ${lead.source}`,
         `When:       ${pacific(lead.createdAt)}`,
         lead.userAgent ? `User agent: ${lead.userAgent}` : null,
@@ -89,7 +117,7 @@ export const mail = {
      */
     subject: "Lead",
     body: (lead: LeadFields) =>
-      `Legroom ${lead.source} lead: ${lead.email}${lead.name ? ` (${lead.name})` : ""}`.slice(
+      `Legroom ${lead.source} lead: ${lead.email}${lead.name ? ` (${lead.name})` : ""}${lead.website ? ` ${lead.website.replace(/^https?:\/\//, "")}` : ""}`.slice(
         0,
         140,
       ),

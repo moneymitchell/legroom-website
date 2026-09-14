@@ -382,9 +382,25 @@ test.describe("forms without JavaScript", () => {
     await page.goto("/contact");
     const contact = page.locator("form[data-lead-form]");
     await expect(contact).toHaveAttribute("action", "/api/lead");
-    for (const field of ["name", "email", "message"]) {
-      await expect(page.locator(`label[for="${field}"]`), `no label for ${field}`).toHaveCount(1);
+    // R5 split the name and added the website. These are element IDS, which is
+    // what label[for] points at; the POST field names use underscores and are
+    // asserted separately below.
+    for (const id of ["first-name", "last-name", "email", "website", "message"]) {
+      await expect(page.locator(`label[for="${id}"]`), `no label for #${id}`).toHaveCount(1);
     }
+    // Every field the Worker reads has to actually be posted, under the name
+    // the Worker reads it by. A renamed input is a field that silently stops
+    // arriving while the form still looks and behaves correctly.
+    for (const name of ["first_name", "last_name", "email", "website", "message", "source"]) {
+      await expect(
+        contact.locator(`[name="${name}"]`),
+        `nothing posts as "${name}"`,
+      ).toHaveCount(1);
+    }
+    await expect(
+      page.locator("#first-name"),
+      "first name is the one required field on this form",
+    ).toHaveAttribute("required", "");
     await expect(page.locator('button[type="submit"]')).toBeVisible();
   });
 

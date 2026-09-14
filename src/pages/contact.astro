@@ -43,16 +43,36 @@ const cap = site.breakdown.capture;
       >
         <input type="hidden" name="source" value="contact" />
 
-        <div class="field">
-          <label for="name">{c.nameLabel}</label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            autocomplete="name"
-            enterkeyhint="next"
-            placeholder={c.namePlaceholder}
-          />
+        {/* Name is two fields now. They sit on one row at desktop and stack
+            on a phone, so the form still reads as five short steps rather than
+            seven. */}
+        <div class="row">
+          <div class="field">
+            <label for="first-name">{c.firstNameLabel}</label>
+            <input
+              id="first-name"
+              name="first_name"
+              type="text"
+              required
+              autocomplete="given-name"
+              enterkeyhint="next"
+              placeholder={c.firstNamePlaceholder}
+            />
+          </div>
+
+          <div class="field">
+            <label for="last-name">
+              {c.lastNameLabel} <span class="opt">{c.lastNameOptional}</span>
+            </label>
+            <input
+              id="last-name"
+              name="last_name"
+              type="text"
+              autocomplete="family-name"
+              enterkeyhint="next"
+              placeholder={c.lastNamePlaceholder}
+            />
+          </div>
         </div>
 
         <div class="field">
@@ -70,8 +90,30 @@ const cap = site.breakdown.capture;
         </div>
 
         <div class="field">
-          <label for="message">{c.messageLabel}</label>
-          <textarea id="message" name="message" rows="6" placeholder={c.messagePlaceholder}></textarea>
+          <label for="website">
+            {c.websiteLabel} <span class="opt">{c.websiteOptional}</span>
+          </label>
+          {/* type="text", not type="url". A url input rejects "acme.com" and
+              demands a scheme, which is a validation error in front of someone
+              who typed their own address correctly. The Worker normalises it. */}
+          <input
+            id="website"
+            name="website"
+            type="text"
+            autocomplete="url"
+            inputmode="url"
+            enterkeyhint="next"
+            spellcheck="false"
+            placeholder={c.websitePlaceholder}
+          />
+        </div>
+
+        <div class="field">
+          <label for="message">
+            {c.messageLabel} <span class="opt">{c.messageOptional}</span>
+          </label>
+          <textarea id="message" name="message" rows="5" placeholder={c.messagePlaceholder}
+          ></textarea>
         </div>
 
         <div class="hp" aria-hidden="true">
@@ -142,6 +184,29 @@ const cap = site.breakdown.capture;
     display: flex;
     flex-direction: column;
     gap: 22px;
+  }
+  /* Two fields on one line at desktop, stacked on a phone. 1fr 1fr rather
+     than auto: a first name and a last name are the same weight and should
+     look it. */
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  @media (max-width: 560px) {
+    .row {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+  }
+  /* "optional" has to be visible enough to be read BEFORE someone starts
+     typing, and quiet enough not to compete with the label. Anything that
+     reads as a second label makes the form look longer than it is. */
+  .opt {
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--ink-3);
   }
   .field {
     display: flex;

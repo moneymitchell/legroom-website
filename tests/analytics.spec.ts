@@ -51,6 +51,9 @@ test("email_capture fires from the inline unit", async ({ page }) => {
 
 test("form_submit fires from the contact form", async ({ page }) => {
   await page.goto("/contact");
+  // first name is required as of R5, so filling only the email leaves the
+  // form invalid, the browser blocks the submit, and no event fires at all.
+  await page.locator("#first-name").fill("Test");
   await page.locator("#email").fill("test@example.com");
   await page.locator('button[type="submit"]').click();
   await page.waitForTimeout(200);

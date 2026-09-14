@@ -27,9 +27,11 @@ var TAB = "Inquiries";
 var HEADERS = [
   "Received",
   "Source",
+  "First name",
+  "Last name",
   "Email",
-  "Name",
-  "Message",
+  "Website",
+  "What is disappearing",
   "Status",
   "Notes",
 ];
@@ -53,10 +55,12 @@ function doPost(e) {
     sheet.appendRow([
       received,
       body.source || "",
+      body.first_name || "",
+      body.last_name || "",
       body.email || "",
-      body.name || "",
+      body.website || "",
       body.message || "",
-      "New", // Status. The dropdown is set up in onOpen below.
+      "New", // Status. The dropdown is set up in setUpSheet.
       "", // Notes. Yours to fill in before the call.
     ]);
 
@@ -98,30 +102,31 @@ function setUpSheet(sheet) {
   sheet.getRange("A:A").setNumberFormat("ddd d mmm, h:mm am/pm");
   sheet.setColumnWidth(1, 150); // Received
   sheet.setColumnWidth(2, 90); // Source
-  sheet.setColumnWidth(3, 230); // Email
-  sheet.setColumnWidth(4, 150); // Name
-  sheet.setColumnWidth(5, 420); // Message
-  sheet.setColumnWidth(6, 110); // Status
-  sheet.setColumnWidth(7, 320); // Notes
+  sheet.setColumnWidth(3, 120); // First name
+  sheet.setColumnWidth(4, 120); // Last name
+  sheet.setColumnWidth(5, 230); // Email
+  sheet.setColumnWidth(6, 200); // Website
+  sheet.setColumnWidth(7, 380); // What is disappearing
+  sheet.setColumnWidth(8, 110); // Status
+  sheet.setColumnWidth(9, 300); // Notes
 
-  // The message is the only free text, so it is the only column that wraps.
-  // Everything else clipping keeps the row height to one line and the sheet
-  // scannable.
-  sheet.getRange("E:E").setWrap(true);
+  // The two free-text columns wrap. Everything else clipping keeps each row
+  // one line tall, which is what makes the sheet scannable at a glance.
   sheet.getRange("G:G").setWrap(true);
+  sheet.getRange("I:I").setWrap(true);
 
   var status = SpreadsheetApp.newDataValidation()
     .requireValueInList(["New", "Replied", "Booked", "Won", "No fit"], true)
     .setAllowInvalid(false)
     .build();
-  sheet.getRange("F2:F").setDataValidation(status);
+  sheet.getRange("H2:H").setDataValidation(status);
 
   // New rows are the ones that need you. They stop being highlighted the
   // moment you move the status on, which makes the sheet self-clearing.
   var rule = SpreadsheetApp.newConditionalFormatRule()
-    .whenFormulaSatisfied('=$F2="New"')
+    .whenFormulaSatisfied('=$H2="New"')
     .setBackground("#fff6d6")
-    .setRanges([sheet.getRange("A2:G")])
+    .setRanges([sheet.getRange("A2:I")])
     .build();
   sheet.setConditionalFormatRules([rule]);
 }
