@@ -18,8 +18,18 @@ import type { Browser, Page } from "@playwright/test";
 /** Empty storage, so the gate sees a first visit. */
 const firstVisit = { storageState: { cookies: [], origins: [] } };
 
-/** Everything the intro fetches, so a test can prove none of it was fetched. */
-const INTRO_ASSET = /\/intro\/|\/intro\..*\.js|lockup-charcoal/;
+/**
+ * What the intro fetches that the homepage would not have fetched anyway: the
+ * sky plate and the animation chunk.
+ *
+ * lockup-charcoal.svg is deliberately NOT in here. The nav, the footer and the
+ * wordmark band all already load it, so the logo beat is served from cache and
+ * costs a returning visitor nothing. That is also the second reason the beat
+ * uses the charcoal lockup rather than the bone one the brief asked for: bone
+ * is invisible on the paper wash, and it would have been a new 15KB download
+ * on top.
+ */
+const INTRO_ASSET = /\/intro\/|intro\.[A-Za-z0-9_-]+\.js/;
 
 async function newVisitor(
   browser: Browser,
