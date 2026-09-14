@@ -25,9 +25,10 @@
  * main thread. Nesting them lets each own its own property and lets the dolly
  * run on the compositor even while the drift is doing main-thread work.
  *
- * TRANSFORM AND OPACITY ONLY. Nothing here animates width, top, or filter. The
- * speed smear is a second copy of the same decoded bitmap rather than a blur,
- * for exactly this reason. See the note in Intro.astro.
+ * TRANSFORM AND OPACITY ONLY. Nothing here animates width, top, or filter, and
+ * there is no speed smear either: the second composited layer it needed cost
+ * three times the dropped frames for an effect that cannot be found in a frame
+ * strip. Measured, not assumed. See the note in Intro.astro.
  * ========================================================================= */
 
 /** Matches the `perspective` on .intro-stage. Changing one without the other
@@ -57,7 +58,6 @@ interface Layers {
   drift: HTMLElement;
   dolly: HTMLElement;
   plate: HTMLImageElement;
-  smear: HTMLImageElement;
   edge: HTMLElement;
   wash: HTMLElement;
   floor: HTMLElement;
@@ -86,21 +86,6 @@ function desktopBeats(el: Layers): Beat[] {
         delay: 900,
         duration: 1500,
         easing: DOLLY_EASE,
-        fill: "forwards",
-      },
-    },
-    {
-      // Only at peak velocity. In and out, never present at rest.
-      el: el.smear,
-      keyframes: [
-        { opacity: 0 },
-        { opacity: 0.34, offset: 0.45 },
-        { opacity: 0 },
-      ],
-      options: {
-        delay: 1100,
-        duration: 1300,
-        easing: "ease-in-out",
         fill: "forwards",
       },
     },
@@ -167,9 +152,7 @@ function desktopBeats(el: Layers): Beat[] {
 
 /**
  * Mobile, 2000ms. The same beats, compressed. No cursor to answer, so no
- * lissajous: a straight slow push to 1.06 and then the dolly. No smear, which
- * on a phone GPU costs a full-viewport composited layer to sell speed that the
- * shorter, smaller dolly is not really claiming.
+ * lissajous: a straight slow push to 1.06 and then the dolly.
  */
 function mobileBeats(el: Layers): Beat[] {
   return [
@@ -337,7 +320,6 @@ export function runIntro(): Promise<void> {
     drift: pick("drift")!,
     dolly: pick("dolly")!,
     plate: pick<HTMLImageElement>("plate")!,
-    smear: pick<HTMLImageElement>("smear")!,
     edge: pick("edge")!,
     wash: pick("wash")!,
     floor: pick("floor")!,
@@ -358,8 +340,6 @@ export function runIntro(): Promise<void> {
   // The gate already preloaded this exact URL, so these are cache hits.
   el.plate.src = src;
   el.lockup.src = "/brand/lockup-charcoal.svg";
-  // Desktop only. On a phone the second layer is cost without a claim.
-  if (!mobile) el.smear.src = src;
 
   return new Promise<void>((resolve) => {
     let done = false;
@@ -373,8 +353,7 @@ export function runIntro(): Promise<void> {
     for (const node of [el.edge, el.floor, el.wash, el.root])
       node.style.willChange = "opacity";
     // These two move and fade at the same time.
-    for (const node of [el.smear, el.logo])
-      node.style.willChange = "transform, opacity";
+    el.logo.style.willChange = "transform, opacity";
 
     const teardown = () => {
       if (done) return;

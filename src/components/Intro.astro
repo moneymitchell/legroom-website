@@ -36,8 +36,7 @@
   <div class="intro-stage">
     <div class="intro-drift" data-intro-drift>
       <div class="intro-dolly" data-intro-dolly>
-        <img class="intro-plate" data-intro-plate alt="" decoding="async" fetchpriority="high" />
-        <img class="intro-smear" data-intro-smear alt="" decoding="async" aria-hidden="true" />
+        <img class="intro-plate" data-intro-plate alt="" decoding="async" />
       </div>
     </div>
   </div>
@@ -112,8 +111,7 @@
      viewport, and every extra point of overscan was eating further into the
      two windows that make the shot read as a cabin. This is layout, set once,
      never animated. */
-  .intro-plate,
-  .intro-smear {
+  .intro-plate {
     position: absolute;
     inset: -4%;
     width: 108%;
@@ -133,17 +131,24 @@
     object-position: 50% 50%;
   }
 
-  /* The speed smear. A second copy of the SAME decoded bitmap, pushed a little
-     further out, faded in only at peak velocity. It is a stand-in for radial
-     motion blur, which is what this beat actually wants and which the
-     performance budget forbids: filter: blur() on a full-viewport surface is a
-     per-frame paint over a million pixels. This is one more composited layer
-     of a texture already in memory, on transform and opacity only. Desktop
-     only; the module never gives it a src on a phone. */
-  .intro-smear {
-    opacity: 0;
-    transform: scale(1.055);
-  }
+  /* THERE IS NO SPEED SMEAR, AND THAT WAS MEASURED RATHER THAN ASSUMED.
+     The brief asks for a radial motion blur or a zoom streak over the dolly.
+     filter: blur() on a full viewport surface is a per-frame paint over a
+     million pixels and the performance budget rules it out, so this was a
+     second copy of the same plate scaled 1.055 and faded in at peak velocity:
+     transform and opacity only, one extra composited layer, no new bytes.
+
+     On a 4x throttled desktop profile it cost 22.2% dropped frames against
+     7.6% with it hidden, same page, same runs. Three times the jank. And in a
+     nine frame strip of the dolly it is not findable: at 0.34 opacity over an
+     image 5% different in scale, there is nothing to see. A second full
+     viewport layer cannot reuse the plate's raster, so it is a whole extra
+     surface to composite every frame for an effect nobody can point at.
+
+     Requirement 8 of the brief is "60fps or it does not ship", which is not a
+     preference. The speed is sold by the dolly curve instead. If this is ever
+     revisited, the cheap version is a gradient, not a bitmap.
+     ------------------------------------------------------------------- */
 
   /* Edges dissolve to paper as they scale past the camera, so the cabin walls
      wash out rather than clipping at the viewport edge. A static gradient with
