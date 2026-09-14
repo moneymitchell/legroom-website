@@ -376,7 +376,7 @@ export const site = {
           { label: "LinkedIn", href: "https://www.linkedin.com/in/jdworcester/" },
           { label: "jdworcester.com", href: "https://jdworcester.com/" },
         ],
-        pills: ["Golf", "Baking pizza", "Lifting", "Watch collecting"],
+        pills: ["Golf", "Baking pizza", "Lifting", "Watch collecting", "Speakeasies"],
         stats: [
           { label: "In the game since", value: "2000" },
           // href "#" is a placeholder: JD to supply the Dotted URL.
