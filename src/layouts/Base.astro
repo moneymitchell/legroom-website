@@ -1,6 +1,7 @@
 ---
 import "../styles/global.css";
 import { site } from "@/content/site";
+import Intro from "@/components/Intro.astro";
 
 /**
  * The document shell: head, metadata, structured data, skip link.
@@ -17,15 +18,67 @@ interface Props {
   /** /thanks should not be indexed. */
   noindex?: boolean;
   canonicalPath?: string;
+  /** Mounts the first-visit intro gate and overlay. Homepage only. */
+  intro?: boolean;
 }
 const {
   title = site.meta.title,
   description = site.meta.description,
   noindex = false,
   canonicalPath = "/",
+  intro = false,
 } = Astro.props;
 
 const canonical = new URL(canonicalPath, site.meta.url).href;
+
+/**
+ * THE INTRO GATE. Blocking, inline, and as early in <head> as it can be,
+ * because everything it decides has to be true before the first paint.
+ *
+ * Checking after paint gives a flash of homepage and then an overlay slamming
+ * over the top of it, which is worse than having no intro at all.
+ *
+ * It is inline rather than a file because a <script src> in <head> is a
+ * blocking round trip charged to EVERY visitor, including the returning ones
+ * this whole design exists to charge nothing. Inline costs them these bytes
+ * and not one request.
+ *
+ * IT IS A STRING RENDERED WITH set:html, NOT SCRIPT CHILDREN. Inside the
+ * `{intro && ...}` expression below, Astro parses children as JSX, so a
+ * template literal written there lands in the output verbatim: braces,
+ * backticks and all. The result is `{`...`}`, which is a block containing a
+ * string expression. Perfectly valid JavaScript that does nothing, throws
+ * nothing, and logs nothing. Cost an hour. set:html emits the exact bytes.
+ *
+ * Being inline, it needs a CSP hash in public/_headers, and set:html makes
+ * those bytes deterministic. scripts/check-intro-csp.mjs verifies the hash
+ * against the built HTML in the predeploy guard. Edit this string and the
+ * guard fails until it is regenerated. It fails safe either way: a blocked
+ * gate sets no attribute, so the homepage renders as normal.
+ *
+ * Order is deliberate. Reduced motion is checked BEFORE the flag is written,
+ * so someone who has it on today and turns it off next month still gets a
+ * first visit rather than having silently spent it.
+ */
+const introGate = `(function(){
+  try {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (localStorage.getItem("lg.intro.seen")) return;
+    localStorage.setItem("lg.intro.seen", "1");
+  } catch (e) { return; }
+  var portrait = innerWidth < 768;
+  var dense = (devicePixelRatio || 1) > 1.5;
+  var src = "/intro/sky-" + (portrait ? "mobile" : "desktop") + (dense ? "-2x" : "") + ".webp";
+  var l = document.createElement("link");
+  l.rel = "preload";
+  l.as = "image";
+  l.href = src;
+  l.setAttribute("fetchpriority", "high");
+  document.head.appendChild(l);
+  var d = document.documentElement;
+  d.dataset.introSrc = src;
+  d.dataset.intro = "run";
+})();`;
 const ogImage = new URL(site.meta.ogImage, site.meta.url).href;
 
 const jsonLd = {
@@ -105,6 +158,8 @@ const jsonLd = {
       name="viewport"
       content="width=device-width, initial-scale=1, interactive-widget=resizes-content"
     />
+    {intro && <script is:inline set:html={introGate} />}
+
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
@@ -136,6 +191,11 @@ const jsonLd = {
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd).replace(/</g, "\\u003c")} />
   </head>
   <body>
+    {/* First in the body, so it is parsed and covering before any homepage
+        content paints underneath it. Last would give exactly the flash the
+        gate above exists to prevent. It holds no focusable elements, so its
+        position here does not touch the tab order. */}
+    {intro && <Intro />}
     <a class="skip" href="#main">Skip to content</a>
     <slot />
   </body>

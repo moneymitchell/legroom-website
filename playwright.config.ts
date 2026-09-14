@@ -19,6 +19,33 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   use: {
     baseURL: "http://127.0.0.1:4321",
+    /**
+     * EVERY CONTEXT STARTS AS A RETURNING VISITOR.
+     *
+     * The homepage shows a first-visit intro overlay, gated on a localStorage
+     * key set by an inline script in Base.astro. A Playwright context starts
+     * with empty storage, so without this the intro ran in every single test,
+     * and while it is on screen it covers the page: elementFromPoint over the
+     * hero CTA returns the overlay, not the button.
+     *
+     * Which means every test that hovers, clicks or measures a button was
+     * racing an animation. They passed because the overlay usually clears
+     * first, and they failed at random when it did not. Two pointer-tilt tests
+     * and the button-physics test were all the same bug wearing three hats.
+     *
+     * The assertions in this suite describe the page as it is USED, which is
+     * after the intro, so this is the correct default. The intro itself is
+     * exercised on purpose in tests/intro.spec.ts, which clears the key.
+     */
+    storageState: {
+      cookies: [],
+      origins: [
+        {
+          origin: "http://127.0.0.1:4321",
+          localStorage: [{ name: "lg.intro.seen", value: "1" }],
+        },
+      ],
+    },
     trace: "retain-on-failure",
     // deterministic rendering for pixel comparison
     launchOptions: { args: ["--hide-scrollbars", "--force-color-profile=srgb"] },

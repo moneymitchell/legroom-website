@@ -21,6 +21,18 @@
  * Four files, one per viewport tier and pixel ratio. The gate in Base.astro
  * picks exactly one and preloads it, so a visitor downloads a single image
  * rather than a srcset the browser has to choose from.
+ *
+ * THE DENSE TIER IS "-2x", NOT THE USUAL "@2x". Cloudflare's static asset
+ * server answers a path containing @ with a 307 to the percent-encoded form:
+ *
+ *   GET /intro/sky-mobile@2x.webp  ->  307  Location: /intro/sky-mobile%402x.webp
+ *
+ * Which costs a round trip on the one request that is the Largest Contentful
+ * Paint, and stops the <link rel=preload> matching the <img> that follows it,
+ * so the plate is fetched twice and shows up late. On a retina phone that read
+ * as flat blue where the illustration should be, for most of the intro. Every
+ * phone and every modern laptop is on this tier, so it was the common case
+ * rather than an edge one. Do not rename these back.
  * ========================================================================= */
 import sharp from "sharp";
 import { existsSync, mkdirSync, statSync } from "node:fs";
@@ -52,9 +64,9 @@ mkdirSync(out, { recursive: true });
 // they can take a harder squeeze than the 1x files without showing it.
 const TIERS = [
   { name: "sky-desktop.webp", from: LANDSCAPE, width: 1600, quality: 66 },
-  { name: "sky-desktop@2x.webp", from: LANDSCAPE, width: 2400, quality: 54 },
+  { name: "sky-desktop-2x.webp", from: LANDSCAPE, width: 2400, quality: 54 },
   { name: "sky-mobile.webp", from: PORTRAIT, width: 720, quality: 64 },
-  { name: "sky-mobile@2x.webp", from: PORTRAIT, width: 1080, quality: 54 },
+  { name: "sky-mobile-2x.webp", from: PORTRAIT, width: 1080, quality: 54 },
 ];
 
 let total = 0;

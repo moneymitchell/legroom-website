@@ -136,6 +136,46 @@ jobs:
           npx lhci autorun --config=lhci.desktop.json
           npx lhci autorun --config=lhci.mobile.json
 
+      - name: The booking link still books
+        # linkinator SKIPS cal.com below, because Cal rate-limits datacentre
+        # IPs and would report false failures every week. That leaves the
+        # single most important link on the site unchecked, so it is checked
+        # here instead, explicitly and with the right tolerance.
+        #
+        # A 404 or a 410 is real breakage: the event was renamed or deleted and
+        # every button on the site now goes nowhere. A 403 or a 429 is Cal
+        # declining to talk to a shared runner, which says nothing about the
+        # link and must never page anyone.
+        run: |
+          LINK=$(node -e '
+            const fs = require("node:fs");
+            const raw = fs.readFileSync("wrangler.jsonc", "utf8");
+            const code = raw.replace(/"(?:[^"\\]|\\.)*"|\/\*[\s\S]*?\*\/|\/\/[^\n]*/g,
+              (m) => (m.startsWith("\"") ? m : " "));
+            process.stdout.write(/"CAL_LINK"\s*:\s*"([^"]+)"/.exec(code)[1]);
+          ')
+          echo "checking $LINK"
+          code=$(curl -sS -L -o body.html -w "%{http_code}" --max-time 30 "$LINK" || echo 000)
+          echo "HTTP $code"
+          case "$code" in
+            404|410)
+              echo "::error::$LINK returns $code. The Cal event was renamed or deleted and every booking button on the site is dead. Fix the slug, then update PUBLIC_CAL_LINK and CAL_LINK together."
+              exit 1
+              ;;
+            200)
+              # A 200 that is Cal's own not-found page is the same failure
+              # wearing a success code.
+              if grep -qi "this booking link\|could not be found\|no longer available" body.html; then
+                echo "::error::$LINK returned 200 but rendered a Cal.com not-found page."
+                exit 1
+              fi
+              echo "booking link is live"
+              ;;
+            *)
+              echo "::warning::$LINK returned $code. Most likely Cal declining a datacentre IP rather than a broken link. Not failing the run."
+              ;;
+          esac
+
       - name: Link check
         # cal.com and the social hosts rate-limit or block datacentre IPs and
         # will report false 403s. They are verified by hand in the live QA

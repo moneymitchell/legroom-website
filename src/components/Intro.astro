@@ -1,0 +1,234 @@
+---
+/**
+ * ============================================================================
+ * The first-visit intro overlay.
+ *
+ * Markup only. Nothing here is visible, and nothing here downloads, unless the
+ * gate in Base.astro has already put data-intro="run" on <html>. That decision
+ * happens in a blocking script in <head>, before this markup is parsed, so the
+ * overlay is either painted on the very first frame or it never exists.
+ *
+ * TWO IMAGES CARRY NO src ATTRIBUTE, DELIBERATELY.
+ *
+ * A returning visitor must download nothing. An <img src> in static markup
+ * downloads for everyone, and the sky plate is 39KB and the lockup is 15KB, so
+ * that is 54KB charged to people who will never see a frame of this. The gate
+ * picks the right plate for the viewport, preloads it, and writes the URL onto
+ * <html>; src/scripts/intro.ts copies it onto the elements. What is left in the
+ * HTML for a returning visitor is this markup, about 380 bytes, and the CSS
+ * below.
+ *
+ * THE LOCKUP IS CHARCOAL, NOT BONE. This is a correction to the brief, which
+ * asked for lockup-bone.svg over a washed sky. lockup-bone.svg is #F2EFE9 and
+ * the wash it would land on is --paper, #F4F1EA: two shades of the same bone,
+ * an invisible logo. Charcoal on paper is the pairing the nav and the Open
+ * Graph card already use, and it crossfades onto a paper homepage cleanly.
+ *
+ * The camera is a real perspective camera rather than a scale() on a flat
+ * image. For Phase A, one plane, the two are indistinguishable. For Phase B
+ * they are not: giving each cut layer its own translateZ inside this same
+ * container is the whole of the parallax work, and none of this structure
+ * changes. See CC-PROMPT-INTRO-ANIMATION.md.
+ * ========================================================================= */
+---
+
+<div class="intro" data-intro-overlay aria-hidden="true">
+  <div class="intro-stage">
+    <div class="intro-drift" data-intro-drift>
+      <div class="intro-dolly" data-intro-dolly>
+        <img class="intro-plate" data-intro-plate alt="" decoding="async" fetchpriority="high" />
+        <img class="intro-smear" data-intro-smear alt="" decoding="async" aria-hidden="true" />
+      </div>
+    </div>
+  </div>
+
+  <div class="intro-edge" data-intro-edge></div>
+  <div class="intro-floor" data-intro-floor></div>
+  <div class="intro-wash" data-intro-wash></div>
+
+  <div class="intro-logo" data-intro-logo>
+    <img data-intro-lockup alt="" decoding="async" />
+  </div>
+</div>
+
+<style>
+  /* Hidden by default and shown only by the gate's attribute. The default is
+     the safe one: no attribute, no overlay, homepage as normal. This rule and
+     the markup travel in the same HTML document, so the CSS cannot arrive
+     without the markup it governs or the other way round. */
+  .intro {
+    display: none;
+  }
+  :global(html[data-intro="run"]) .intro {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    overflow: hidden;
+
+    /* The plate's own sky, so the very first frame is the right blue rather
+       than white. Sampled from the illustration at 50% 25%. Solid colour
+       paints instantly and costs nothing, which matters because the plate
+       itself is still arriving. */
+    background: #1579db;
+
+    /* Absorb the first click rather than letting it through to a CTA. The
+       first input skips the intro; the second one books the call. A click
+       that does both at once is a click nobody asked for. */
+    pointer-events: auto;
+    touch-action: none;
+  }
+
+  .intro-stage {
+    position: absolute;
+    inset: 0;
+    /* The vanishing point, not the centre of the frame. 42% down the viewport
+       is the open sky between the seat backs, which is where the camera is
+       flying. Pitching it above centre also carries the legs and the seat
+       edges down and out of frame instead of through the lens, which is the
+       cheap half of the "you fly through your own legs" problem. */
+    perspective: 1000px;
+    perspective-origin: 50% 42%;
+  }
+
+  /* preserve-3d is load-bearing: without it the dolly's translateZ is
+     flattened by this element and the perspective above does nothing. */
+  .intro-drift {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+  }
+
+  .intro-dolly {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+  }
+
+  /* Overscanned by 4%. The drift moves the frame 1.5% and rolls it 0.4deg;
+     that roll displaces a corner by about another 0.4%, so 3% is the floor and
+     4% is the floor plus a margin. It was 6%, which was a guess, and the guess
+     cost real composition: `cover` already crops a 1.78 plate into a 1.6
+     viewport, and every extra point of overscan was eating further into the
+     two windows that make the shot read as a cabin. This is layout, set once,
+     never animated. */
+  .intro-plate,
+  .intro-smear {
+    position: absolute;
+    inset: -4%;
+    width: 108%;
+    height: 108%;
+    /* global.css sets `img, svg { max-width: 100% }`, which silently clamped
+       this back to 100% of the stage while the element stayed offset at -6%.
+       The result was an 86px strip of bare background down the right edge of
+       every desktop frame, which looked exactly like an image that had failed
+       to cover rather than a rule from three files away. Overscan is the whole
+       point of this box, so it opts out by name. */
+    max-width: none;
+    max-height: none;
+    object-fit: cover;
+    /* The illustration's subject sits centre-bottom. On a viewport far wider
+       or taller than the plate, cover crops from the edges and this keeps the
+       legs and both windows in frame. */
+    object-position: 50% 50%;
+  }
+
+  /* The speed smear. A second copy of the SAME decoded bitmap, pushed a little
+     further out, faded in only at peak velocity. It is a stand-in for radial
+     motion blur, which is what this beat actually wants and which the
+     performance budget forbids: filter: blur() on a full-viewport surface is a
+     per-frame paint over a million pixels. This is one more composited layer
+     of a texture already in memory, on transform and opacity only. Desktop
+     only; the module never gives it a src on a phone. */
+  .intro-smear {
+    opacity: 0;
+    transform: scale(1.055);
+  }
+
+  /* Edges dissolve to paper as they scale past the camera, so the cabin walls
+     wash out rather than clipping at the viewport edge. A static gradient with
+     only its opacity animated, never a repainted gradient. */
+  .intro-edge {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    background: radial-gradient(
+      ellipse 78% 72% at 50% 42%,
+      rgba(244, 241, 234, 0) 34%,
+      rgba(244, 241, 234, 0.55) 68%,
+      rgba(244, 241, 234, 0.95) 88%,
+      var(--paper) 100%
+    );
+  }
+
+  /* The full wash the lockup sits on, and the surface that crossfades to the
+     homepage. --paper is #F4F1EA; the illustration's own clouds are #FEFAF2.
+     Close enough that the clouds appear to become the page. */
+  .intro-wash {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    background: var(--paper);
+  }
+  /* YOU FLY THROUGH YOUR OWN LEGS, and this is the half of that the flat image
+     can fix.
+
+     The legs and shoes sit closest to the camera, so the dolly scales them
+     hardest and they pass through the lens as two enormous translucent
+     sneakers. The brief files this under Phase B, on the grounds that the real
+     fix is fading the leg layer once there is a leg layer. There is a cheaper
+     one that needs no layers at all: bring paper up from the bottom of the
+     frame on its own later, faster curve, so the legs are gone before they are
+     big enough to read as legs. The camera keeps flying; the floor is simply
+     no longer there to fly through.
+
+     Its own element rather than another stop on .intro-edge, because it has to
+     arrive 450ms after the edges do. Starting them together fogs the bottom of
+     the frame while the shot is still a cabin. */
+  .intro-floor {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    background: linear-gradient(
+      to top,
+      var(--paper) 0%,
+      rgba(244, 241, 234, 0.92) 18%,
+      rgba(244, 241, 234, 0.55) 32%,
+      rgba(244, 241, 234, 0) 48%
+    );
+  }
+
+  /* The wash tops out at 0.94, not 1. At a flat 1 the lockup beat is a blank
+     sheet of paper and the flight is over a beat early; at 0.94 the blown out
+     clouds are still faintly there behind it, which is the difference between
+     a washed sky and no sky. */
+
+  .intro-logo {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    opacity: 0;
+  }
+  .intro-logo img {
+    width: min(46vw, 560px);
+    /* From the lockup's own viewBox, 4496.7 x 896. Reserves the box before the
+       SVG arrives, so the logo beat cannot shift. */
+    aspect-ratio: 4496.7 / 896;
+    height: auto;
+  }
+  @media (max-width: 767px) {
+    .intro-logo img {
+      width: 74vw;
+    }
+  }
+
+  /* Belt and braces. The gate already returns before setting the attribute
+     when reduced motion is set, so this should be unreachable, and it costs
+     one selector to make "unreachable" into "impossible". */
+  @media (prefers-reduced-motion: reduce) {
+    :global(html[data-intro="run"]) .intro {
+      display: none;
+    }
+  }
+</style>

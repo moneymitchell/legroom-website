@@ -15,7 +15,7 @@
     "test:a11y": "playwright test tests/a11y.spec.ts",
     "lh": "lhci autorun --config=lighthouserc.json",
     "assets": "node scripts/build-assets.mjs",
-    "predeploy": "node scripts/deploy-guard.mjs pre",
+    "predeploy": "node scripts/deploy-guard.mjs pre && node scripts/check-intro-csp.mjs",
     "deploy": "astro build && wrangler deploy",
     "postdeploy": "node scripts/deploy-guard.mjs post",
     "guard": "node scripts/deploy-guard.mjs pre && node scripts/deploy-guard.mjs post",
@@ -27,6 +27,8 @@
     "lh:mobile": "lhci autorun --config=lighthouserc.mobile.json",
     "lh:report": "node scripts/lh-summary.mjs",
     "check:csp": "node scripts/check-csp.mjs",
+    "csp:hash": "node scripts/check-intro-csp.mjs --write",
+    "intro:assets": "node scripts/build-intro-assets.mjs",
     "emails": "node scripts/preview-emails.mjs"
   },
   "keywords": [],
