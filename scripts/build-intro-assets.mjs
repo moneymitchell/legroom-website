@@ -62,11 +62,20 @@ mkdirSync(out, { recursive: true });
 // Quality is set per tier rather than globally. The 2x files are only ever
 // seen on a dense display where the extra pixels already carry the detail, so
 // they can take a harder squeeze than the 1x files without showing it.
+//
+// The dense phone tier is 820 wide, not the 1080 that would be pixel exact on
+// a 412px viewport at DPR 2.625. Two reasons, and the second is the one that
+// showed up in the numbers. 1080x1919 is 2.1 megapixels to DECODE, and on a
+// throttled mobile CPU that decode competes with the font parsing and text
+// raster that the headline is waiting on. 820 wide is 1.2 megapixels, 42% less
+// work, for a plate that is in motion for its whole life and washed to paper
+// for the last third of it. Nobody can resolve the difference; the main thread
+// can.
 const TIERS = [
   { name: "sky-desktop.webp", from: LANDSCAPE, width: 1600, quality: 66 },
   { name: "sky-desktop-2x.webp", from: LANDSCAPE, width: 2400, quality: 54 },
   { name: "sky-mobile.webp", from: PORTRAIT, width: 720, quality: 64 },
-  { name: "sky-mobile-2x.webp", from: PORTRAIT, width: 1080, quality: 54 },
+  { name: "sky-mobile-2x.webp", from: PORTRAIT, width: 820, quality: 54 },
 ];
 
 let total = 0;

@@ -59,6 +59,22 @@ const canonical = new URL(canonicalPath, site.meta.url).href;
  * Order is deliberate. Reduced motion is checked BEFORE the flag is written,
  * so someone who has it on today and turns it off next month still gets a
  * first visit rather than having silently spent it.
+ *
+ * THE PRELOAD IS LOW PRIORITY, AND THAT IS THE WHOLE POINT OF IT.
+ *
+ * It was fetchpriority="high" first, on the reasoning that the plate is the
+ * first thing anyone sees. Measured, that cost 452ms of mobile Largest
+ * Contentful Paint, and not in the way anyone expected: the LCP element is not
+ * the plate at all, it is the <h1>. Both display faces are font-display:block,
+ * so the headline cannot paint until Oswald 700 arrives, and a high priority
+ * 53KB image sharing a throttled connection with two preloaded fonts makes
+ * them all arrive later. The intro was taking bandwidth from the sentence the
+ * site exists to say.
+ *
+ * Low priority puts the fonts back in front. The plate loses that race by
+ * design and has slack to lose it in: the overlay paints the illustration's
+ * own sky blue immediately, and intro.ts waits up to 600ms for the plate to
+ * decode before starting the timeline. Nobody sees a gap; they see the sky.
  */
 const introGate = `(function(){
   try {
@@ -73,7 +89,7 @@ const introGate = `(function(){
   l.rel = "preload";
   l.as = "image";
   l.href = src;
-  l.setAttribute("fetchpriority", "high");
+  l.setAttribute("fetchpriority", "low");
   document.head.appendChild(l);
   var d = document.documentElement;
   d.dataset.introSrc = src;
