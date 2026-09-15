@@ -12,7 +12,7 @@ import { bookHref, contactHref } from "@/lib/links";
 
 ---
 
-<Base intro>
+<Base>
   <Hero bookHref={bookHref} contactHref={contactHref} />
   <main id="main">
     <Breakdown />
@@ -37,24 +37,20 @@ import { bookHref, contactHref } from "@/lib/links";
   import { initPointerTilt } from "@/scripts/pointer-tilt";
   import { calSlug } from "@/lib/links";
 
+  // INTRO: start
   /**
    * The intro, if the gate in Base.astro decided there should be one.
    *
-   * DYNAMIC import, not a static one. A static import puts this in the main
-   * bundle and every returning visitor pays for an animation they will never
-   * see. The chunk is a few KB and it is fetched in parallel with the sky
-   * plate, which the module waits on anyway, so the extra request costs
-   * nothing that is on the critical path.
-   *
-   * Everything below this line runs regardless. The overlay sits ON a live
-   * homepage, it is not a gate in front of a dead one: the fonts, the CTAs and
-   * the Cal embed are all wired while the intro is still playing, so the
-   * instant it clears the page is ready to be used.
+   * DYNAMIC import, not a static one: a static import puts it in the main
+   * bundle and every returning visitor pays for an animation they never see.
+   * Everything below this block runs regardless. The overlay sits ON a live
+   * homepage: the CTAs, the forms and the Cal embed are wired while the intro
+   * plays, so the instant it clears the page is ready to be used.
    */
   if (document.documentElement.dataset.intro === "run") {
-    import("@/scripts/intro").then((m) => m.runIntro());
+    import("@/scripts/intro/intro").then((m) => m.runIntro());
   }
-
+  // INTRO: end
   // Wiring first: it is cheap, and the CTAs and forms have to be live the
   // moment the page is.
   initForms(import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "");

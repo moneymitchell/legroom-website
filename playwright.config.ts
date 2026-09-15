@@ -19,6 +19,7 @@ export default defineConfig({
   expect: { timeout: 10_000 },
   use: {
     baseURL: "http://127.0.0.1:4321",
+    // INTRO: start
     /**
      * EVERY CONTEXT STARTS AS A RETURNING VISITOR.
      *
@@ -46,6 +47,7 @@ export default defineConfig({
         },
       ],
     },
+    // INTRO: end
     trace: "retain-on-failure",
     // deterministic rendering for pixel comparison
     launchOptions: { args: ["--hide-scrollbars", "--force-color-profile=srgb"] },

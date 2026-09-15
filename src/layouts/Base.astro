@@ -1,7 +1,9 @@
 ---
 import "../styles/global.css";
 import { site } from "@/content/site";
+// INTRO: start
 import Intro from "@/components/Intro.astro";
+// INTRO: end
 
 /**
  * The document shell: head, metadata, structured data, skip link.
@@ -18,83 +20,92 @@ interface Props {
   /** /thanks should not be indexed. */
   noindex?: boolean;
   canonicalPath?: string;
-  /** Mounts the first-visit intro gate and overlay. Homepage only. */
-  intro?: boolean;
 }
 const {
   title = site.meta.title,
   description = site.meta.description,
   noindex = false,
   canonicalPath = "/",
-  intro = false,
 } = Astro.props;
 
 const canonical = new URL(canonicalPath, site.meta.url).href;
-
+// INTRO: start
 /**
  * THE INTRO GATE. Blocking, inline, and as early in <head> as it can be,
  * because everything it decides has to be true before the first paint.
- *
  * Checking after paint gives a flash of homepage and then an overlay slamming
  * over the top of it, which is worse than having no intro at all.
  *
- * It is inline rather than a file because a <script src> in <head> is a
- * blocking round trip charged to EVERY visitor, including the returning ones
- * this whole design exists to charge nothing. Inline costs them these bytes
- * and not one request.
+ * Inline rather than a file because a <script src> in <head> is a blocking
+ * round trip charged to EVERY visitor, including the returning ones this whole
+ * design exists to charge nothing. Inline costs them these bytes and not one
+ * request.
  *
- * IT IS A STRING RENDERED WITH set:html, NOT SCRIPT CHILDREN. Inside the
- * `{intro && ...}` expression below, Astro parses children as JSX, so a
- * template literal written there lands in the output verbatim: braces,
- * backticks and all. The result is `{`...`}`, which is a block containing a
- * string expression. Perfectly valid JavaScript that does nothing, throws
- * nothing, and logs nothing. Cost an hour. set:html emits the exact bytes.
+ * A STRING RENDERED WITH set:html, NOT SCRIPT CHILDREN. Inside a `{cond && ...}`
+ * expression Astro parses children as JSX, so a template literal written there
+ * lands in the output with its braces and backticks, as a block containing a
+ * string. Valid JavaScript that does nothing and reports nothing. set:html
+ * emits the exact bytes, and exact bytes are what the CSP hash pins. The hash
+ * is written into dist/_headers by scripts/check-intro-csp.mjs on every build.
  *
- * Being inline, it needs a CSP hash in public/_headers, and set:html makes
- * those bytes deterministic. scripts/check-intro-csp.mjs verifies the hash
- * against the built HTML in the predeploy guard. Edit this string and the
- * guard fails until it is regenerated. It fails safe either way: a blocked
- * gate sets no attribute, so the homepage renders as normal.
+ * THE ORDER OF THE CHECKS IS THE DESIGN.
+ *   reduced motion    first, and it returns before anything is spent
+ *   a fine pointer    a phone or a tablet goes straight to the page
+ *   1024 wide         and so does a narrow window
+ *   the first visit   the flag is read here and written only once everything
+ *                     else has passed, so a visitor who fails a later check
+ *                     today still has their first visit to have
+ *   WebGL2            a real context, created here and handed to the module,
+ *                     rather than a second one made later
+ * Anything that throws is a no. A blocked gate, a full storage quota, a
+ * context that will not create: the homepage renders as normal.
  *
- * Order is deliberate. Reduced motion is checked BEFORE the flag is written,
- * so someone who has it on today and turns it off next month still gets a
- * first visit rather than having silently spent it.
+ * The preloads are LOW priority on purpose. High put a 60KB image in front of
+ * the two font-display:block fonts the headline waits on, and cost 450ms of
+ * mobile LCP in the previous build. The plate has slack to lose that race in:
+ * the overlay's own sky is on screen while it arrives.
  *
- * THE PRELOAD IS LOW PRIORITY, AND THAT IS THE WHOLE POINT OF IT.
- *
- * It was fetchpriority="high" first, on the reasoning that the plate is the
- * first thing anyone sees. Measured, that cost 452ms of mobile Largest
- * Contentful Paint, and not in the way anyone expected: the LCP element is not
- * the plate at all, it is the <h1>. Both display faces are font-display:block,
- * so the headline cannot paint until Oswald 700 arrives, and a high priority
- * 53KB image sharing a throttled connection with two preloaded fonts makes
- * them all arrive later. The intro was taking bandwidth from the sentence the
- * site exists to say.
- *
- * Low priority puts the fonts back in front. The plate loses that race by
- * design and has slack to lose it in: the overlay paints the illustration's
- * own sky blue immediately, and intro.ts waits up to 600ms for the plate to
- * decode before starting the timeline. Nobody sees a gap; they see the sky.
+ * __INTRO_CHUNK__ is not a bug. The module is a dynamic import from the
+ * homepage's script, so its fetch would not begin until that script had been
+ * downloaded, parsed and run, which was 200ms of flat blue before the first
+ * frame. Its hashed filename is only known once Vite has bundled, so
+ * scripts/check-intro-csp.mjs writes the real path over that placeholder in
+ * dist/index.html at build:done, BEFORE it hashes the gate. A modulepreload
+ * from a gate that has already decided there will be an intro costs a
+ * returning visitor nothing, because for them the gate has already returned.
  */
+const intro = Astro.url.pathname === "/";
 const introGate = `(function(){
   try {
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    if (innerWidth < 1024) return;
     if (localStorage.getItem("lg.intro.seen")) return;
+    var c = document.createElement("canvas");
+    var gl = c.getContext("webgl2", { alpha: false, antialias: false, depth: false, stencil: false, powerPreference: "high-performance" });
+    if (!gl) return;
     localStorage.setItem("lg.intro.seen", "1");
   } catch (e) { return; }
-  var portrait = innerWidth < 768;
-  var dense = (devicePixelRatio || 1) > 1.5;
-  var src = "/intro/sky-" + (portrait ? "mobile" : "desktop") + (dense ? "-2x" : "") + ".webp";
-  var l = document.createElement("link");
-  l.rel = "preload";
-  l.as = "image";
-  l.href = src;
-  l.setAttribute("fetchpriority", "low");
-  document.head.appendChild(l);
-  var d = document.documentElement;
-  d.dataset.introSrc = src;
-  d.dataset.intro = "run";
+  var src = "/intro/sky-desktop" + ((devicePixelRatio || 1) > 1.5 ? "-2x" : "") + ".webp";
+  var pre = function (href) {
+    var l = document.createElement("link");
+    l.rel = "preload";
+    l.as = "image";
+    l.href = href;
+    l.setAttribute("fetchpriority", "low");
+    document.head.appendChild(l);
+  };
+  pre(src);
+  pre("/intro/sky-desktop-depth.webp");
+  pre("/intro/clouds.webp");
+  var m = document.createElement("link");
+  m.rel = "modulepreload";
+  m.href = "__INTRO_CHUNK__";
+  document.head.appendChild(m);
+  window.__legroomIntro = { canvas: c, gl: gl, src: src };
+  document.documentElement.dataset.intro = "run";
 })();`;
+// INTRO: end
 const ogImage = new URL(site.meta.ogImage, site.meta.url).href;
 
 const jsonLd = {
@@ -174,8 +185,9 @@ const jsonLd = {
       name="viewport"
       content="width=device-width, initial-scale=1, interactive-widget=resizes-content"
     />
+    {/* INTRO: start */}
     {intro && <script is:inline set:html={introGate} />}
-
+    {/* INTRO: end */}
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
@@ -207,11 +219,12 @@ const jsonLd = {
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd).replace(/</g, "\\u003c")} />
   </head>
   <body>
+    {/* INTRO: start */}
     {/* First in the body, so it is parsed and covering before any homepage
-        content paints underneath it. Last would give exactly the flash the
-        gate above exists to prevent. It holds no focusable elements, so its
+        content paints underneath it. It holds no focusable elements, so its
         position here does not touch the tab order. */}
     {intro && <Intro />}
+    {/* INTRO: end */}
     <a class="skip" href="#main">Skip to content</a>
     <slot />
   </body>
