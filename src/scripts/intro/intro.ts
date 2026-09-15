@@ -5,25 +5,32 @@
  * one: reduced motion off, a fine pointer, a wide enough window, a first
  * visit, and a WebGL2 context it has already created and handed over.
  *
- * Four stages, timed from timing.ts:
+ * Two halves.
  *
- *   look     the illustration with a camera in it, parallax by depth
- *   fly      the cabin scales away, clouds come at the viewer, the sky lifts
- *   logo     the lockup on paper, then travelling to the nav's own box
+ * BEFORE THE CLICK it is a still: the illustration, the lockup, the sign that
+ * says LET'S GO. Nothing else moves. The homepage is live underneath the
+ * whole time, and any input other than the sign takes the visitor straight
+ * to it.
+ *
+ * AFTER THE CLICK, about two seconds, timed from timing.ts:
+ *
+ *   launch   the sign presses, the lockup and the sign fall away
+ *   flight   straight down Z. The cabin and the legs scale out past the
+ *            edges; drawn clouds stream out of the vanishing point, stretched
+ *            along their own motion; speed lines rush outward; the sun comes
+ *            in from the top right; the plate smears radially
+ *   whiteout the frame lifts to the paper token
+ *   lockup   the charcoal lockup on paper, then a travel to the nav lockup's
+ *            own box, measured with getBoundingClientRect when the beat begins
  *   handoff  a cross dissolve into the real nav, and the overlay is gone
- *
- * THE HOMEPAGE IS LIVE UNDERNEATH FROM THE FIRST FRAME. This is an overlay on
- * a page, not a gate in front of one. The nav the lockup lands on is the real
- * nav, measured with getBoundingClientRect when the beat begins, so it is
- * wherever the viewport put it.
  *
  * ANY INPUT ENDS IT. Freeze the frame, fade it off, tear down. A lost WebGL
  * context does the same without the fade, because a lost canvas has nothing
  * to fade.
  * ========================================================================= */
 
-import { T, LOOK, FLY, CLOUDS, SKY_RGB, LOGO, RENDER_DPR_MAX } from "./timing";
-import { Renderer, type QuadConstants, type QuadState } from "./gl";
+import { T, FLY, CLOUDS, SKY_RGB, LOGO, RENDER_DPR_MAX } from "./timing";
+import { Renderer, type Constants, type QuadState } from "./gl";
 import { CloudPool, VP_SCREEN } from "./clouds";
 
 declare global {
@@ -36,7 +43,6 @@ declare global {
   }
 }
 
-const TAU = Math.PI * 2;
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 const smooth = (a: number, b: number, x: number) => {
   const t = clamp01((x - a) / (b - a));
@@ -44,24 +50,25 @@ const smooth = (a: number, b: number, x: number) => {
 };
 const easeIn = (t: number, k: number) => Math.pow(t, k);
 
-/** `#f4f1ea` to [0..1] rgb. The paper token, read from the stylesheet. */
-function paperRgb(): [number, number, number] {
+/** A `#rrggbb` token from the stylesheet to [0..1] rgb. */
+function tokenRgb(
+  name: string,
+  fallback: [number, number, number],
+): [number, number, number] {
   const raw = getComputedStyle(document.documentElement)
-    .getPropertyValue("--paper")
+    .getPropertyValue(name)
     .trim();
   const m = /^#([0-9a-f]{6})$/i.exec(raw);
-  if (!m) return [1, 1, 1];
-  const n = parseInt(m[1] ?? "ffffff", 16);
+  if (!m) return fallback;
+  const n = parseInt(m[1] ?? "0", 16);
   return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
 }
 
 /**
  * Loaded AND decoded. onload fires when the bytes are in, not when the pixels
  * are, and handing an undecoded image to texImage2D makes the upload decode
- * it synchronously on the main thread. On software GL under Lighthouse that
- * showed up as three long tasks of about 300ms, one per texture, in one run
- * out of five. decode() does the same work off the main thread first, and the
- * upload is then a copy.
+ * it synchronously on the main thread. decode() does that work off the main
+ * thread first, and the upload is then a copy.
  */
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -80,6 +87,8 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 export function runIntro(): Promise<void> {
   const handoff = window.__legroomIntro;
   const root = document.querySelector<HTMLElement>("[data-intro-overlay]");
+  const ui = root?.querySelector<HTMLElement>("[data-intro-ui]");
+  const cta = root?.querySelector<HTMLButtonElement>("[data-intro-cta]");
   const logo = root?.querySelector<HTMLElement>("[data-intro-logo]");
   const lockup = root?.querySelector<HTMLImageElement>("[data-intro-lockup]");
   const navLockup =
@@ -91,8 +100,11 @@ export function runIntro(): Promise<void> {
     document.documentElement.removeAttribute("data-intro");
     return Promise.resolve();
   };
-  if (!handoff || !root || !logo || !lockup) return bail();
+  if (!handoff || !root || !ui || !cta || !logo || !lockup) return bail();
 
+  // Rebound so the narrowing survives into the hoisted `go` below.
+  const sign = cta;
+  const still = ui;
   const { canvas, gl, src } = handoff;
   delete window.__legroomIntro;
 
@@ -106,24 +118,22 @@ export function runIntro(): Promise<void> {
   return new Promise<void>((resolve) => {
     let done = false;
     let raf = 0;
-    let t0 = -1;
+    let clickAt = -1;
     let last = 0;
-    let started = false;
+    let dirty = true;
+    let logoStage = 0;
+    const animations: Animation[] = [];
     const pool = new CloudPool(CLOUDS.COUNT);
-    const constants: QuadConstants = {
+    const k: Constants = {
       plateAspect: 16 / 9,
       vp: VP_SCREEN,
-      farFollow: LOOK.FAR_FOLLOW,
-      barrel: LOOK.BARREL,
-      vignette: LOOK.VIGNETTE,
       sky: [SKY_RGB[0] / 255, SKY_RGB[1] / 255, SKY_RGB[2] / 255],
-      bone: paperRgb(),
+      bone: tokenRgb("--paper", [1, 1, 1]),
+      ink: tokenRgb("--charcoal", [0.11, 0.11, 0.1]),
       focal: CLOUDS.FOCAL,
+      glare: [FLY.GLARE_X, FLY.GLARE_Y],
     };
     const state: QuadState = {
-      shift: [0, 0],
-      roll: 0,
-      zoom: LOOK.OVERSCAN,
       scaleSky: 1,
       scaleNear: 1,
       nearFade: 0,
@@ -131,23 +141,8 @@ export function runIntro(): Promise<void> {
       streak: 0,
     };
 
-    // pointer, in -1..1, lerped
-    let ptx = 0;
-    let pty = 0;
-    let px = 0;
-    let py = 0;
-    let pointerSeen = -1;
-    const onMove = (e: PointerEvent) => {
-      ptx = (e.clientX / innerWidth) * 2 - 1;
-      pty = 1 - (e.clientY / innerHeight) * 2;
-      if (pointerSeen < 0) pointerSeen = performance.now();
-    };
-
-    // the lockup's two boxes
-    let logoStage = 0; // 0 not started, 1 in, 2 travelling, 3 handing off
-    const animations: Animation[] = [];
-
-    canvas.className = "intro-canvas";
+    canvas.className = "lg-intro-canvas";
+    canvas.setAttribute("aria-hidden", "true");
     root.prepend(canvas);
     lockup.src = "/brand/lockup-charcoal.svg";
 
@@ -157,6 +152,7 @@ export function runIntro(): Promise<void> {
         Math.round(innerWidth * dpr),
         Math.round(innerHeight * dpr),
       );
+      dirty = true;
     };
 
     const teardown = () => {
@@ -166,7 +162,7 @@ export function runIntro(): Promise<void> {
       for (const a of animations) a.cancel();
       for (const t of INPUTS)
         window.removeEventListener(t, onInput, INPUT_OPTS);
-      window.removeEventListener("pointermove", onMove);
+      sign.removeEventListener("click", go);
       window.removeEventListener("resize", size);
       reduce?.removeEventListener("change", onReduce);
       canvas.removeEventListener("webglcontextlost", onLost);
@@ -218,7 +214,23 @@ export function runIntro(): Promise<void> {
       setTimeout(teardown, 300);
     };
 
-    const onInput = () => skip();
+    /**
+     * Any input at all, except the sign doing its job. A press on the sign is
+     * the launch; Enter or Space on it is the same launch from the keyboard.
+     * Everything else, including Tab away from it, is a visitor who wants the
+     * page, and gets it.
+     */
+    const onInput = (e: Event) => {
+      const onCta = e.target instanceof Node && sign.contains(e.target);
+      if (onCta && clickAt < 0) {
+        if (e.type === "pointerdown") return;
+        if (e.type === "keydown") {
+          const key = (e as KeyboardEvent).key;
+          if (key === "Enter" || key === " ") return;
+        }
+      }
+      skip();
+    };
     const INPUTS = [
       "pointerdown",
       "keydown",
@@ -228,7 +240,6 @@ export function runIntro(): Promise<void> {
     ] as const;
     const INPUT_OPTS = { passive: true, capture: true } as const;
     for (const t of INPUTS) window.addEventListener(t, onInput, INPUT_OPTS);
-    window.addEventListener("pointermove", onMove, { passive: true });
     window.addEventListener("resize", size);
     canvas.addEventListener("webglcontextlost", onLost);
     const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)");
@@ -237,7 +248,50 @@ export function runIntro(): Promise<void> {
     };
     reduce?.addEventListener("change", onReduce);
 
-    /* --- the lockup ------------------------------------------------------ */
+    /* --- the launch ------------------------------------------------------ */
+
+    function go() {
+      if (done || clickAt >= 0) return;
+      clickAt = performance.now();
+      last = clickAt;
+      sign.disabled = true;
+      document.documentElement.dataset.intro = "fly";
+      // the press, then the lockup and the sign fall away together
+      animations.push(
+        sign.animate(
+          [
+            { transform: "scale(1)" },
+            { transform: "scale(0.95)" },
+            { transform: "scale(1)" },
+          ],
+          {
+            duration: T.PRESS,
+            easing: "ease-out",
+          },
+        ),
+      );
+      const out = still.animate(
+        [
+          { opacity: 1, transform: "scale(1)" },
+          { opacity: 0, transform: "scale(0.8)" },
+        ],
+        {
+          delay: T.UI_OUT_START,
+          duration: T.UI_OUT,
+          easing: "ease-in",
+          fill: "forwards",
+        },
+      );
+      out.onfinish = () => {
+        still.style.visibility = "hidden";
+      };
+      animations.push(out);
+      // the atlas has had since load to arrive; if it has not, the clouds
+      // join when it does
+    }
+    sign.addEventListener("click", go);
+
+    /* --- the lockup beat, unchanged ------------------------------------- */
 
     const startLogo = () => {
       logoStage = 1;
@@ -255,28 +309,21 @@ export function runIntro(): Promise<void> {
         height: `${box.height}px`,
       });
       const heroW = Math.min(innerWidth * LOGO.WIDTH_VW, LOGO.MAX_WIDTH);
-      const k = heroW / box.width;
-      const heroH = box.height * k;
+      const kk = heroW / box.width;
+      const heroH = box.height * kk;
       const dx = innerWidth / 2 - heroW / 2 - box.left;
       const dy = innerHeight / 2 - heroH / 2 - box.top;
       const at = (s: number) =>
-        `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px) scale(${(k * s).toFixed(4)})`;
+        `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px) scale(${(kk * s).toFixed(4)})`;
       logo.style.opacity = "1";
+      const hold = T.LOGO_HOLD_END - T.LOGO_START;
       const a = lockup.animate(
         [
           { opacity: 0, transform: at(LOGO.SCALE_IN) },
-          {
-            opacity: 1,
-            transform: at(1),
-            offset: T.LOGO_FADE_IN / (T.LOGO_HOLD_END - T.FLY_END),
-          },
+          { opacity: 1, transform: at(1), offset: T.LOGO_FADE_IN / hold },
           { opacity: 1, transform: at(1) },
         ],
-        {
-          duration: T.LOGO_HOLD_END - T.FLY_END,
-          easing: "ease-out",
-          fill: "forwards",
-        },
+        { duration: hold, easing: "ease-out", fill: "forwards" },
       );
       animations.push(a);
       a.onfinish = () => {
@@ -315,74 +362,71 @@ export function runIntro(): Promise<void> {
         return;
       }
       if (!renderer.hasPlate()) return;
-      if (t0 < 0) {
-        t0 = now;
-        last = now;
+
+      // before the click: the still, drawn once and again only on resize
+      if (clickAt < 0) {
+        if (dirty) {
+          renderer.drawQuad(k, state);
+          dirty = false;
+        }
+        return;
       }
-      const t = now - t0;
+
+      const tc = now - clickAt;
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
-      const ts = t / 1000;
 
-      // stage 1: the look around, decaying as the fly begins
-      const look = 1 - smooth(T.LOOK_END, T.LOOK_END + T.FLY_RAMP, t);
-      const influence =
-        pointerSeen < 0 ? 0 : smooth(0, T.POINTER_EASE_IN, now - pointerSeen);
-      px += (ptx - px) * LOOK.POINTER_LERP;
-      py += (pty - py) * LOOK.POINTER_LERP;
-      const ptrAmp = LOOK.CEILING * LOOK.POINTER_WEIGHT * influence;
-      let sx =
-        LOOK.IDLE_AMP * Math.sin(TAU * LOOK.IDLE_HZ_X * ts) + px * ptrAmp;
-      let sy =
-        LOOK.IDLE_AMP * 0.7 * Math.sin(TAU * LOOK.IDLE_HZ_Y * ts + 1.1) +
-        py * ptrAmp * 0.7;
-      const len = Math.hypot(sx, sy);
-      if (len > LOOK.CEILING) {
-        sx *= LOOK.CEILING / len;
-        sy *= LOOK.CEILING / len;
-      }
-      state.shift = [sx * look, sy * look];
-      state.roll =
-        ((LOOK.ROLL_DEG * Math.PI) / 180) *
-        Math.sin(TAU * LOOK.ROLL_HZ * ts + 2.0) *
-        look;
-      state.zoom =
-        LOOK.OVERSCAN *
-        (1 + LOOK.BREATHE * Math.sin(TAU * LOOK.BREATHE_HZ * ts));
-
-      // stage 2: the fly
-      const fp = clamp01((t - T.LOOK_END) / (T.FLY_END - T.LOOK_END));
+      const ramp = smooth(0, T.FLY_RAMP, tc);
+      const fp = clamp01(tc / T.WASH_END);
+      // the seat frame holds while the world starts to move, then breaks out
+      const fn = clamp01(
+        (tc - FLY.NEAR_START) / (FLY.NEAR_END - FLY.NEAR_START),
+      );
       state.scaleSky = 1 + (FLY.SKY_SCALE_END - 1) * easeIn(fp, FLY.SKY_CURVE);
       state.scaleNear =
-        1 + (FLY.NEAR_SCALE_END - 1) * easeIn(fp, FLY.NEAR_CURVE);
-      state.nearFade = smooth(T.LOOK_END, T.CABIN_GONE, t);
-      state.lift = smooth(T.SKY_LIFT_START, T.SKY_LIFT_END, t);
+        1 + (FLY.NEAR_SCALE_END - 1) * easeIn(fn, FLY.NEAR_CURVE);
+      state.nearFade = smooth(FLY.NEAR_START + 150, FLY.CABIN_GONE, tc);
+      state.lift = smooth(T.WASH_START, T.WASH_END, tc);
       state.streak =
         FLY.STREAK *
-        Math.sin(
-          Math.PI *
-            clamp01((t - T.STREAK_START) / (T.STREAK_END - T.STREAK_START)),
-        );
+        smooth(FLY.STREAK_START, FLY.STREAK_PEAK, tc) *
+        (1 - state.lift);
+      renderer.drawQuad(k, state);
 
-      renderer.drawQuad(constants, state);
-
-      if (t >= T.LOOK_END && renderer.hasAtlas()) {
-        const ramp = smooth(T.LOOK_END, T.LOOK_END + T.FLY_RAMP, t);
-        const alpha = ramp * (1 - smooth(0.45, 0.95, state.lift));
+      if (renderer.hasAtlas()) {
+        const alpha = ramp * (1 - smooth(0.5, 1, state.lift));
         pool.update(dt, CLOUDS.SPEED * ramp);
         if (alpha > 0)
-          renderer.drawClouds(constants, pool.buffer, pool.write(alpha));
+          renderer.drawClouds(
+            k,
+            pool.buffer,
+            pool.write(alpha),
+            CLOUDS.STRETCH * ramp,
+          );
       }
 
-      // stage 3 begins on the clock; stages 3 and 4 run on the Web Animations
-      // API from there, and the canvas just keeps showing paper underneath
-      if (t >= T.FLY_END && logoStage === 0) {
+      const lines =
+        FLY.LINES *
+        smooth(FLY.LINES_START, FLY.LINES_FULL, tc) *
+        (1 - smooth(0.3, 1, state.lift));
+      // the sun sweeps in from off the top right corner as the speed comes up
+      const sweep = smooth(FLY.GLARE_START, FLY.GLARE_FULL, tc);
+      const glare = FLY.GLARE * sweep * (1 - smooth(0.6, 1, state.lift));
+      k.glare = [
+        FLY.GLARE_FROM_X + (FLY.GLARE_X - FLY.GLARE_FROM_X) * sweep,
+        FLY.GLARE_FROM_Y + (FLY.GLARE_Y - FLY.GLARE_FROM_Y) * sweep,
+      ];
+      renderer.drawOverlay(k, tc / 1000, lines, glare);
+
+      // the lockup beat begins on the clock; from there the Web Animations
+      // API runs it, and the canvas just keeps showing paper underneath
+      if (tc >= T.LOGO_START && logoStage === 0) {
         root.style.background = "var(--paper)";
         startLogo();
       }
       // belt and braces: the WAAPI chain ends the intro, and if a backgrounded
       // tab ever drops an onfinish, the clock does
-      if (t > T.TOTAL + 600) teardown();
+      if (tc > T.TOTAL + 600) teardown();
     };
 
     /* --- assets, staggered ----------------------------------------------- */
@@ -392,17 +436,22 @@ export function runIntro(): Promise<void> {
     const depth = loadImage("/intro/sky-desktop-depth.webp");
     const atlas = loadImage("/intro/clouds.webp");
 
+    let started = false;
     const begin = () => {
       if (started || done) return;
       started = true;
       raf = requestAnimationFrame(frame);
+      // Enter on the sign is the launch from the keyboard; Tab off it is the
+      // page. Focus lands there so both are one key away. No scroll: the
+      // overlay is fixed and the page under it must not move.
+      sign.focus({ preventScroll: true });
     };
 
     // The plate and the depth map on separate frames, each an upload of a few
-    // megabytes; the atlas afterwards, since nothing draws it for 1.3 seconds.
+    // megabytes; the atlas afterwards, since nothing draws it until the click.
     plate
       .then((img) => {
-        constants.plateAspect = img.naturalWidth / img.naturalHeight;
+        k.plateAspect = img.naturalWidth / img.naturalHeight;
         renderer.setPlate(img);
         return depth;
       })
@@ -410,6 +459,7 @@ export function runIntro(): Promise<void> {
         requestAnimationFrame(() => {
           if (done) return;
           renderer.setDepth(img);
+          dirty = true;
           begin();
           atlas
             .then((a) =>

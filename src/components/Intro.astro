@@ -1,7 +1,8 @@
 ---
 /**
  * ============================================================================
- * The first visit intro's overlay: the shell the renderer draws into.
+ * The first visit intro's overlay: the still the visitor lands on, and the
+ * shell the renderer draws into once they click.
  *
  * Nothing here is visible, and nothing here downloads, unless the gate in
  * Base.astro has put data-intro="run" on <html>. That decision is made in a
@@ -9,32 +10,52 @@
  * painted on the very first frame or it never exists. Mounted from Base.astro
  * inside an INTRO fence, homepage only.
  *
+ * THE STILL IS THE COMING SOON PAGE. Same illustration, same lockup with the
+ * yellow mark, same chunky sign that presses itself every few seconds, same
+ * placement. The sign says LET'S GO and is a real button: focused on load,
+ * Enter launches, Tab leaves. The lockup is a CSS background rather than an
+ * <img>, under a selector only the gate's attribute can satisfy, so a
+ * returning visitor never fetches it and a first visitor has it on the first
+ * frame. The path data stays in the file, not in every page's HTML.
+ *
  * The canvas is not in this markup. The gate creates it, because it has to
  * create a WebGL2 context to know whether there can be an intro at all, and
  * making a second one to draw into would be a waste of the first. The module
  * moves that canvas in here when it loads. Until then the solid sky below is
- * what the first frames are.
+ * what the first frames are, with the lockup and the sign already on it.
  *
- * The lockup carries no src. The nav, the footer and the wordmark band all
- * already load lockup-charcoal.svg, so by the time the module sets it, it is
- * in cache. It is charcoal and not the bone one the earlier brief asked for:
- * bone is #F2EFE9 on a #F4F1EA wash, two shades of the same thing.
+ * The ending's lockup carries no src. The nav, the footer and the wordmark
+ * band all already load lockup-charcoal.svg, so by the time the module sets
+ * it, it is in cache.
  * ========================================================================= */
 ---
 
-<div class="intro" data-intro-overlay aria-hidden="true">
-  <div class="intro-logo" data-intro-logo>
+<div class="lg-intro" data-intro-overlay>
+  <div class="lg-intro-ui" data-intro-ui>
+    <div class="lg-intro-hero" data-intro-hero role="img" aria-label="Legroom"></div>
+    <button class="lg-intro-go" type="button" data-intro-cta>Let's go!</button>
+  </div>
+  <div class="lg-intro-logo" data-intro-logo aria-hidden="true">
     <img data-intro-lockup alt="" decoding="async" />
   </div>
 </div>
 
 <style>
   /* Hidden by default; shown only by the gate's attribute. The rule and the
-     markup travel in one HTML document, so neither can arrive alone. */
-  .intro {
+     markup travel in one HTML document, so neither can arrive alone.
+
+     SCOPED, AND NAMED SO NOTHING ELSE CAN MATCH. The first cut of this file
+     used a global stylesheet and a class called .intro, and the homepage
+     already has one of those: a paragraph block in the breakdown section.
+     That block became a fixed, full height, sky blue, z-index 9999 element
+     600px wide down the left of the viewport, painted above the overlay, with
+     the paragraph on it. Astro's scoping stops that class of mistake; the
+     lg- prefix stops the next one. */
+  .lg-intro {
     display: none;
   }
-  :global(html[data-intro="run"]) .intro {
+  :global(html[data-intro="run"]) .lg-intro,
+  :global(html[data-intro="fly"]) .lg-intro {
     display: block;
     position: fixed;
     inset: 0;
@@ -43,28 +64,139 @@
     /* The illustration's own sky, #187ee0, sampled by the asset script. The
        first frames are this colour while the plate decodes. */
     background: #187ee0;
-    /* Absorb the first click rather than pass it to a CTA: the first input
-       skips the intro, the second one books the call. */
-    pointer-events: auto;
     touch-action: none;
     will-change: opacity;
   }
-  :global(html[data-intro="run"]) .intro :global(canvas) {
+  /* The canvas is made by the gate, not by this template, so it carries no
+     scope attribute and has to be reached with :global. */
+  .lg-intro :global(canvas) {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
     display: block;
   }
-  .intro-logo {
+
+  /* The content block sits a little above centre, as it does on the coming
+     soon page, where the sky is clear and the sneakers are not. */
+  .lg-intro-ui {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5vh;
+    padding-bottom: 16vh;
+    transform-origin: 50% 50%;
+    will-change: transform, opacity;
+  }
+  .lg-intro-hero {
+    width: clamp(260px, 42vw, 560px);
+    aspect-ratio: 4496.7 / 896;
+  }
+  /* Only the gate's attribute can make this selector match, and only a
+     matching selector makes a browser fetch a background image. */
+  :global(html[data-intro="run"]) .lg-intro-hero,
+  :global(html[data-intro="fly"]) .lg-intro-hero {
+    background: url("/intro/lockup-hero.svg") center / contain no-repeat;
+  }
+
+  /* The sign, verbatim from the coming soon page: a chunky arcade button
+     with a yellow extrusion and a charcoal outline, that presses itself into
+     its base every few seconds. Its base colour, #C79B00, is the artwork's
+     and not a site token; the sign is the one place it exists. */
+  @property --intro-depth {
+    syntax: "<length>";
+    inherits: false;
+    initial-value: 10px;
+  }
+  .lg-intro-go {
+    --lift: 10px;
+    --press: 8px;
+    --intro-depth: var(--lift);
+    position: relative;
+    display: block;
+    margin: 0 0 calc(var(--lift) + 3px);
+    width: 276px;
+    height: 66px;
+    line-height: 60px;
+    padding: 0 44px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 26px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-align: center;
+    white-space: nowrap;
+    color: var(--charcoal);
+    background: var(--yellow);
+    border: 3px solid var(--charcoal);
+    border-radius: 14px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    transform: translateY(0);
+    box-shadow:
+      inset 0 2px 0 rgba(255, 255, 255, 0.45),
+      0 var(--intro-depth) 0 #c79b00,
+      0 var(--intro-depth) 0 3px var(--charcoal),
+      0 calc(var(--intro-depth) + 8px) 22px rgba(0, 0, 0, 0.28);
+    animation: intro-sign-press 4.6s cubic-bezier(0.2, 0, 0.1, 1) 1.8s infinite;
+    will-change: transform;
+  }
+  .lg-intro-go:hover {
+    animation: none;
+    background: var(--yellow-lift);
+  }
+  .lg-intro-go:active {
+    animation: none;
+    --intro-depth: 2px;
+    transform: translateY(var(--press));
+  }
+  .lg-intro-go:focus-visible {
+    outline: 3px solid var(--charcoal);
+    outline-offset: 5px;
+  }
+  .lg-intro-go:disabled {
+    animation: none;
+    pointer-events: none;
+  }
+  /* Idle physics: long rest, quick press into the base, small overshoot on
+     release, settle. */
+  @keyframes intro-sign-press {
+    0%,
+    88% {
+      --intro-depth: var(--lift);
+      transform: translateY(0);
+    }
+    90%,
+    94% {
+      --intro-depth: 2px;
+      transform: translateY(var(--press));
+    }
+    97% {
+      --intro-depth: calc(var(--lift) + 2px);
+      transform: translateY(-2px);
+    }
+    100% {
+      --intro-depth: var(--lift);
+      transform: translateY(0);
+    }
+  }
+
+  /* Never interactive, and it sits above the sign in paint order: without
+     this it swallowed the click that launches the whole thing. */
+  .lg-intro-logo {
     position: absolute;
     inset: 0;
     opacity: 0;
+    pointer-events: none;
   }
   /* Laid out at the nav lockup's measured box and transformed away from it,
      so the end of its travel is the identity transform. max-width: none opts
      out of the global img rule, which would clamp the box. */
-  .intro-logo img {
+  .lg-intro-logo img {
     position: absolute;
     left: 0;
     top: 0;
@@ -74,8 +206,12 @@
     transform-origin: 0 0;
     will-change: transform, opacity;
   }
+
+  /* Belt and braces. The gate returns before setting the attribute when
+     reduced motion is set, so this should be unreachable. */
   @media (prefers-reduced-motion: reduce) {
-    :global(html[data-intro="run"]) .intro {
+    :global(html[data-intro="run"]) .lg-intro,
+    :global(html[data-intro="fly"]) .lg-intro {
       display: none;
     }
   }

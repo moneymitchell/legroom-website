@@ -1,9 +1,10 @@
 /**
  * ============================================================================
  * The renderer. Hand rolled WebGL2 rather than a library: the scene is one
- * full screen triangle with a shader and one instanced draw of billboards,
- * and everything a library would add is plumbing for things this does not do.
- * The whole intro, shaders included, has to come in under 30KB gzipped.
+ * full screen triangle for the plate, one instanced draw for the clouds and
+ * one more full screen triangle for the lines and the sun, and everything a
+ * library would add is plumbing for things this does not do. The whole intro,
+ * shaders included, has to come in under 30KB gzipped.
  *
  * SHADER COMPILATION DOES NOT BLOCK. Linking a program and then asking for
  * LINK_STATUS, or for a uniform location, stalls the main thread until the
@@ -14,24 +15,21 @@
  *
  * So no such question is asked until the driver has answered a cheap one.
  * With KHR_parallel_shader_compile, COMPLETION_STATUS_KHR is polled. Without
- * it, a fence is placed after the link and clientWaitSync with a zero timeout
- * reports whether the GPU process has got that far, which it answers from
- * its last known state without waiting. Only once the fence has signalled
- * does the renderer ask for LINK_STATUS and the uniform locations, and by
- * then the answers are already there.
+ * it, a fence is placed after the links and clientWaitSync with a zero timeout
+ * reports whether the GPU process has got that far, which it answers from its
+ * last known state without waiting. Only once the fence has signalled does the
+ * renderer ask for LINK_STATUS and the uniform locations, and by then the
+ * answers are already there.
  *
  * TEXTURE UPLOADS ARE SPREAD OUT. Each texImage2D copies the whole bitmap on
  * the main thread. The caller uploads the plate and the depth map on separate
  * frames as they decode, and the atlas later still, since nothing needs it
- * until the fly begins.
+ * until the click.
  * ========================================================================= */
 
-import { QUAD_VS, QUAD_FS, CLOUD_VS, CLOUD_FS } from "./shaders";
+import { QUAD_VS, QUAD_FS, CLOUD_VS, CLOUD_FS, OVER_FS } from "./shaders";
 
 export interface QuadState {
-  shift: [number, number];
-  roll: number;
-  zoom: number;
   scaleSky: number;
   scaleNear: number;
   nearFade: number;
@@ -39,29 +37,57 @@ export interface QuadState {
   streak: number;
 }
 
-export interface QuadConstants {
+export interface Constants {
   plateAspect: number;
+  /** The vanishing point, y up. */
   vp: [number, number];
-  farFollow: number;
-  barrel: number;
-  vignette: number;
   sky: [number, number, number];
   bone: [number, number, number];
+  ink: [number, number, number];
   focal: number;
+  /** The sun, y up. */
+  glare: [number, number];
 }
 
 /** Floats per billboard instance: x y z size, cell flip alpha roll. */
 export const INSTANCE_FLOATS = 8;
 
+const QUAD_U = [
+  "uColor",
+  "uDepth",
+  "uRes",
+  "uPlateAspect",
+  "uVP",
+  "uScaleSky",
+  "uScaleNear",
+  "uNearFade",
+  "uLift",
+  "uSky",
+  "uBone",
+  "uStreak",
+];
+const CLOUD_U = ["uAtlas", "uRes", "uFocal", "uVPndc", "uStretch"];
+const OVER_U = [
+  "uRes",
+  "uVP",
+  "uTime",
+  "uLines",
+  "uGlare",
+  "uGlarePos",
+  "uInk",
+];
+
 export class Renderer {
   private readonly gl: WebGL2RenderingContext;
   private readonly parallel: { COMPLETION_STATUS_KHR: number } | null;
-  private quad: WebGLProgram;
-  private cloud: WebGLProgram;
+  private readonly quad: WebGLProgram;
+  private readonly cloud: WebGLProgram;
+  private readonly over: WebGLProgram;
   private fence: WebGLSync | null = null;
   private linked = false;
   private qu = new Map<string, WebGLUniformLocation | null>();
   private cu = new Map<string, WebGLUniformLocation | null>();
+  private ou = new Map<string, WebGLUniformLocation | null>();
   private color: WebGLTexture | null = null;
   private depth: WebGLTexture | null = null;
   private atlas: WebGLTexture | null = null;
@@ -75,6 +101,7 @@ export class Renderer {
     this.parallel = gl.getExtension("KHR_parallel_shader_compile");
     this.quad = this.program(QUAD_VS, QUAD_FS);
     this.cloud = this.program(CLOUD_VS, CLOUD_FS);
+    this.over = this.program(QUAD_VS, OVER_FS);
     if (!this.parallel) {
       this.fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
       gl.flush();
@@ -102,25 +129,22 @@ export class Renderer {
     return p;
   }
 
-  /** True once both programs are usable. Non blocking where the driver allows. */
+  /** True once all three programs are usable. Non blocking where the driver allows. */
   ready(): boolean {
     if (this.linked) return true;
     if (this.dead) return false;
     const gl = this.gl;
+    const programs = [this.quad, this.cloud, this.over];
     if (this.parallel) {
       const k = this.parallel.COMPLETION_STATUS_KHR;
-      if (
-        !gl.getProgramParameter(this.quad, k) ||
-        !gl.getProgramParameter(this.cloud, k)
-      )
-        return false;
+      for (const p of programs) if (!gl.getProgramParameter(p, k)) return false;
     } else if (this.fence) {
       const st = gl.clientWaitSync(this.fence, 0, 0);
       if (st === gl.TIMEOUT_EXPIRED) return false;
       gl.deleteSync(this.fence);
       this.fence = null;
     }
-    for (const p of [this.quad, this.cloud]) {
+    for (const p of programs) {
       if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
         // Surface the compiler's message once, then let the caller bail to
         // the homepage. A dead intro must never be a dead page.
@@ -129,29 +153,10 @@ export class Renderer {
         return false;
       }
     }
-    for (const name of [
-      "uColor",
-      "uDepth",
-      "uRes",
-      "uPlateAspect",
-      "uShift",
-      "uRoll",
-      "uZoom",
-      "uVP",
-      "uScaleSky",
-      "uScaleNear",
-      "uFarFollow",
-      "uNearFade",
-      "uLift",
-      "uSky",
-      "uBone",
-      "uStreak",
-      "uBarrel",
-      "uVig",
-    ])
-      this.qu.set(name, gl.getUniformLocation(this.quad, name));
-    for (const name of ["uAtlas", "uRes", "uFocal", "uVPndc"])
-      this.cu.set(name, gl.getUniformLocation(this.cloud, name));
+    for (const n of QUAD_U) this.qu.set(n, gl.getUniformLocation(this.quad, n));
+    for (const n of CLOUD_U)
+      this.cu.set(n, gl.getUniformLocation(this.cloud, n));
+    for (const n of OVER_U) this.ou.set(n, gl.getUniformLocation(this.over, n));
     gl.useProgram(this.quad);
     gl.uniform1i(this.qu.get("uColor") ?? null, 0);
     gl.uniform1i(this.qu.get("uDepth") ?? null, 1);
@@ -216,7 +221,7 @@ export class Renderer {
     this.gl.viewport(0, 0, width, height);
   }
 
-  drawQuad(k: QuadConstants, s: QuadState): void {
+  drawQuad(k: Constants, s: QuadState): void {
     const gl = this.gl;
     const u = (n: string) => this.qu.get(n) ?? null;
     gl.useProgram(this.quad);
@@ -226,27 +231,26 @@ export class Renderer {
     gl.bindTexture(gl.TEXTURE_2D, this.depth);
     gl.uniform2f(u("uRes"), gl.drawingBufferWidth, gl.drawingBufferHeight);
     gl.uniform1f(u("uPlateAspect"), k.plateAspect);
-    gl.uniform2f(u("uShift"), s.shift[0], s.shift[1]);
-    gl.uniform1f(u("uRoll"), s.roll);
-    gl.uniform1f(u("uZoom"), s.zoom);
     gl.uniform2f(u("uVP"), k.vp[0], k.vp[1]);
     gl.uniform1f(u("uScaleSky"), s.scaleSky);
     gl.uniform1f(u("uScaleNear"), s.scaleNear);
-    gl.uniform1f(u("uFarFollow"), k.farFollow);
     gl.uniform1f(u("uNearFade"), s.nearFade);
     gl.uniform1f(u("uLift"), s.lift);
     gl.uniform3f(u("uSky"), k.sky[0], k.sky[1], k.sky[2]);
     gl.uniform3f(u("uBone"), k.bone[0], k.bone[1], k.bone[2]);
     gl.uniform1f(u("uStreak"), s.streak);
-    gl.uniform1f(u("uBarrel"), k.barrel);
-    gl.uniform1f(u("uVig"), k.vignette);
     gl.bindVertexArray(null);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 
   /** Uploads `count` instances from `data` and draws them, back to front as
    *  given. Straight alpha over what is already there. */
-  drawClouds(k: QuadConstants, data: Float32Array, count: number): void {
+  drawClouds(
+    k: Constants,
+    data: Float32Array,
+    count: number,
+    stretch: number,
+  ): void {
     if (count === 0 || !this.atlas) return;
     const gl = this.gl;
     if (!this.vao) {
@@ -279,17 +283,37 @@ export class Renderer {
       gl.drawingBufferHeight,
     );
     gl.uniform1f(this.cu.get("uFocal") ?? null, k.focal);
-    // vanishing point to NDC, y up
     gl.uniform2f(
       this.cu.get("uVPndc") ?? null,
       k.vp[0] * 2 - 1,
       k.vp[1] * 2 - 1,
     );
+    gl.uniform1f(this.cu.get("uStretch") ?? null, stretch);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, count);
     gl.disable(gl.BLEND);
     gl.bindVertexArray(null);
+  }
+
+  /** The lines and the sun, premultiplied over everything. */
+  drawOverlay(k: Constants, time: number, lines: number, glare: number): void {
+    if (lines <= 0.001 && glare <= 0.001) return;
+    const gl = this.gl;
+    const u = (n: string) => this.ou.get(n) ?? null;
+    gl.useProgram(this.over);
+    gl.uniform2f(u("uRes"), gl.drawingBufferWidth, gl.drawingBufferHeight);
+    gl.uniform2f(u("uVP"), k.vp[0], k.vp[1]);
+    gl.uniform1f(u("uTime"), time);
+    gl.uniform1f(u("uLines"), lines);
+    gl.uniform1f(u("uGlare"), glare);
+    gl.uniform2f(u("uGlarePos"), k.glare[0], k.glare[1]);
+    gl.uniform3f(u("uInk"), k.ink[0], k.ink[1], k.ink[2]);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    gl.bindVertexArray(null);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.disable(gl.BLEND);
   }
 
   /** Frees everything and releases the context. The canvas is the caller's. */
@@ -302,6 +326,7 @@ export class Renderer {
     if (this.vao) gl.deleteVertexArray(this.vao);
     gl.deleteProgram(this.quad);
     gl.deleteProgram(this.cloud);
+    gl.deleteProgram(this.over);
     this.color = this.depth = this.atlas = null;
     this.dead = true;
     gl.getExtension("WEBGL_lose_context")?.loseContext();

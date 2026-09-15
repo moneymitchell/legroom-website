@@ -11,6 +11,7 @@
  *   sky-desktop-2x.webp     2000 wide, for dense displays
  *   sky-desktop-depth.webp  the depth map, copied as is
  *   clouds.webp             a 4x2 atlas of eight drawn clouds, with alpha
+ *   lockup-hero.svg         the hero lockup, bone wordmark and yellow mark
  *
  * SOURCES ARE NOT IN THIS REPO. The illustration is a ChatGPT original on JD's
  * Desktop and there is no PSD and no vector. The depth map was made from it
@@ -36,7 +37,7 @@
  * scale stays under 4x.
  * ========================================================================= */
 import sharp from "sharp";
-import { existsSync, mkdirSync, statSync, copyFileSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, statSync, copyFileSync, readFileSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
@@ -192,6 +193,20 @@ function cloudSvg({ base, bumps, tail }) {
   mkdirSync(dirname(sheet), { recursive: true });
   await sharp(dest).flatten({ background: "#1579db" }).png().toFile(sheet);
   log(`preview at .astro/clouds-preview.png`);
+}
+
+/* --- 5. the hero lockup ------------------------------------------------ */
+// The coming soon page's composition: bone wordmark, yellow mark, one lockup.
+// lockup-bone.svg is that lockup with both symbols in bone, its mark being the
+// first <path>. Refilling that one path is the whole job, and doing it here
+// means the hero is one CSS background, not 15KB of path data in the HTML.
+{
+  const src = readFileSync(join(root, "public", "brand", "lockup-bone.svg"), "utf8");
+  const hero = src.replace(/<path fill-rule="evenodd"/, '<path fill="#FFC800" fill-rule="evenodd"');
+  if (hero === src) throw new Error("lockup-bone.svg: the mark path was not where this expected it");
+  const dest = join(out, "lockup-hero.svg");
+  writeFileSync(dest, hero);
+  log(`${"lockup-hero.svg".padEnd(24)} from brand/lockup-bone.svg, mark refilled yellow  ${kb(dest)}`);
 }
 
 console.log("\n  intro assets built\n");
