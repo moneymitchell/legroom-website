@@ -4,9 +4,10 @@
 # months later, when nobody is looking, that an image got heavier, a third
 # party started blocking, or a link rotted.
 #
-# >>> AT CUTOVER: change TARGET below to https://legroomcompany.com and delete
-# >>> the CF_ACCESS secrets from the repository. The apex is public, so the
-# >>> service token stops being needed the moment the apex is the target.
+# Points at the live apex since cutover on 2026-09-15. The CF_ACCESS headers
+# below are only needed when a workflow_dispatch run targets staging, which
+# sits behind Cloudflare Access; against the public apex they are empty and
+# ignored.
 name: Monitor
 
 on:
@@ -17,7 +18,7 @@ on:
   workflow_dispatch:
     inputs:
       url:
-        description: "URL to check. Defaults to staging."
+        description: "URL to check. Defaults to the live site."
         required: false
         type: string
 
@@ -34,7 +35,7 @@ jobs:
       # The cutover target. GitHub does not allow one env entry to reference
       # another, so this literal is the one to change, not a DEFAULT_URL above
       # it that would sit there unused and look authoritative.
-      TARGET: ${{ inputs.url || 'https://preview.legroomcompany.com' }}
+      TARGET: ${{ inputs.url || 'https://legroomcompany.com' }}
       # Staging sits behind Cloudflare Access, so an unauthenticated request
       # gets the Access login page rather than the site: Lighthouse would
       # cheerfully score the login screen and report a green 100. A service

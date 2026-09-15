@@ -28,15 +28,19 @@
     "run_worker_first": true
   },
 
-  // STAGING ONLY. This is the single hostname by which this Worker reaches the
-  // public, and it is a custom domain rather than a plain route so Cloudflare
-  // creates and owns the DNS record.
+  // Three custom domains, so Cloudflare creates and owns the DNS records.
   //
-  // The apex and www are NOT here and must never be. They serve the coming
-  // soon page from a different Worker, `legroom-website`, and they move only
-  // at cutover, by hand, per CUTOVER.md. scripts/deploy-guard.mjs refuses to
-  // deploy a config that lists either of them.
-  "routes": [{ "pattern": "preview.legroomcompany.com", "custom_domain": true }],
+  // CUTOVER, 2026-09-15. Until today the apex and www served the coming soon
+  // page from a different Worker, `legroom-website`, and the deploy guard
+  // refused any config that listed them. They moved here on purpose, per
+  // CUTOVER.md, and the guard's PRODUCTION_HOSTS was emptied in the same
+  // commit so that the diff is the record of the one time this was meant.
+  // preview stays as staging: same Worker, different hostname, crawl ban on.
+  "routes": [
+    { "pattern": "preview.legroomcompany.com", "custom_domain": true },
+    { "pattern": "legroomcompany.com", "custom_domain": true },
+    { "pattern": "www.legroomcompany.com", "custom_domain": true }
+  ],
 
   // NO workers.dev URL, explicitly. Adding a custom domain turns this off by
   // default, and leaving it to a default that could flip back would be

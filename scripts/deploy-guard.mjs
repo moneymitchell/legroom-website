@@ -37,8 +37,19 @@ const OURS = "legroom-web";
 /** The Worker serving the coming soon page. Never ours to touch. */
 const THEIRS = "legroom-website";
 
-/** Hostnames that belong to the coming soon page until JD says otherwise. */
-const PRODUCTION_HOSTS = ["legroomcompany.com", "www.legroomcompany.com"];
+/**
+ * Hostnames that belonged to the coming soon page until JD said otherwise.
+ *
+ * EMPTIED AT CUTOVER, 2026-09-15. The apex and www moved to this Worker on
+ * purpose, per CUTOVER.md, in the same commit that added them to
+ * wrangler.jsonc. The pre-check keeps refusing anything listed here, which is
+ * now nothing; the post-check below verifies the apex serves THIS site rather
+ * than the coming soon page, which is the failure that matters from today.
+ */
+const PRODUCTION_HOSTS = [];
+
+/** What the live site must answer with, checked after every deploy. */
+const LIVE_HOSTS = ["legroomcompany.com", "www.legroomcompany.com"];
 
 const fail = (msg) => {
   console.error(`\n  DEPLOY BLOCKED\n\n  ${msg}\n`);
@@ -119,29 +130,30 @@ if (mode === "pre") {
 if (mode === "post") {
   // Fetch it. The whole point is not to take anyone's word for it, including
   // Cloudflare's dashboard or this script's own pre-check.
+  //
+  // Since cutover the question is inverted: the apex must serve THIS site,
+  // with no crawl ban. A coming soon marker means the routes went backwards;
+  // an X-Robots-Tag means the staging hostname check in worker/index.ts has
+  // stopped recognising production, which takes the site out of Google.
   let bad = false;
-  for (const host of PRODUCTION_HOSTS) {
+  for (const host of LIVE_HOSTS) {
     const url = `https://${host}`;
     try {
       const res = await fetch(url, { redirect: "follow" });
       const html = await res.text();
       const title = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html)?.[1]?.trim() ?? "(none)";
-      const h1 =
-        /<h1[^>]*>([\s\S]*?)<\/h1>/i
-          .exec(html)?.[1]
-          ?.replace(/<[^>]*>/g, "")
-          .trim() ?? "(none)";
       const comingSoon = /coming soon/i.test(html);
+      const robots = res.headers.get("x-robots-tag");
 
       console.log(`  ${url}`);
       console.log(`    HTTP  ${res.status}`);
       console.log(`    title ${title}`);
-      console.log(`    h1    ${h1}`);
-      console.log(`    coming soon marker: ${comingSoon ? "present" : "ABSENT"}`);
+      console.log(`    coming soon marker: ${comingSoon ? "PRESENT" : "absent"}`);
+      console.log(`    x-robots-tag: ${robots ?? "none"}`);
 
-      if (!comingSoon) {
+      if (res.status !== 200 || comingSoon || robots) {
         bad = true;
-        console.error(`    ^^ ${url} is no longer serving the coming soon page.`);
+        console.error(`    ^^ ${url} is not serving the live site cleanly.`);
       }
     } catch (err) {
       bad = true;
@@ -150,11 +162,10 @@ if (mode === "post") {
   }
   if (bad) {
     fail(
-      `the apex changed. Something in this deploy reached production.\n` +
-        `  Roll back per CUTOVER.md and stop.`,
+      `the apex is wrong. Roll back per CUTOVER.md section 5 and stop.`,
     );
   }
-  console.log(`  apex guard: coming soon page intact on both hosts. OK`);
+  console.log(`  apex guard: live site on both hosts, no crawl ban. OK`);
   process.exit(0);
 }
 
