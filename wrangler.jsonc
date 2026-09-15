@@ -55,7 +55,11 @@
   "vars": {
     "SITE_URL": "https://legroomcompany.com",
     "NOTIFY_TO": "jd@legroomcompany.com",
-    "MAIL_FROM": "JD Worcester <jd@legroomcompany.com>",
+    // The display name is the biggest text on a phone's inbox screen, and
+    // "JD Worcester" says nothing about the company they filled a form on
+    // ten minutes ago. Brand belongs in the sender, which leaves the subject
+    // free to be specific rather than doing two jobs badly.
+    "MAIL_FROM": "JD at Legroom <jd@legroomcompany.com>",
     "CAL_LINK": "https://cal.com/jdworcester/15min"
   },
 

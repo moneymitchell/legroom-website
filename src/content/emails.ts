@@ -35,7 +35,11 @@ export const mail = {
 
   /* --- to the person who just submitted ---------------------------------- */
   submitter: {
-    subject: "Your free breakdown",
+    /* The sender already carries the brand, so the subject does not need to
+       repeat it and can be specific instead. "15 minutes" is the thing they
+       actually agreed to and the thing that distinguishes this from every
+       other reply-to-your-enquiry email in the inbox. */
+    subject: "Your free breakdown, 15 minutes",
 
     /**
      * Four short lines. What it is, the link on its own line, a way out that
