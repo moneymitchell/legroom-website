@@ -1,7 +1,7 @@
 ---
 import Button from "./ui/Button.astro";
 import Chip from "./ui/Chip.astro";
-import { site } from "@/content/site";
+import { site, spots } from "@/content/site";
 
 /**
  * CTA + founder cards. 1043px at 1440, cards 772 tall.
@@ -61,7 +61,11 @@ const { cta, founders } = site;
             {cta.ctaSecondary}
           </Button>
         </div>
-        <div class="chiprow"><Chip>{cta.chip}</Chip></div>
+        {/* Same shape as the hero chip: one wrapper span, and data-month for
+            the Worker to keep current. See Hero.astro. */}
+        <div class="chiprow">
+          <Chip><span>{spots.label}{" · "}<span data-month>{spots.month}</span></span></Chip>
+        </div>
       </div>
 
       <div class="deck">

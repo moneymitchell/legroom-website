@@ -23,6 +23,7 @@
  * ========================================================================= */
 
 import { mail, type LeadFields } from "../src/content/emails";
+import { spotsMonth } from "../src/content/site";
 
 export interface Env {
   ASSETS: Fetcher;
@@ -150,13 +151,55 @@ export default {
     }
 
     // everything else is the static site
-    const res = await env.ASSETS.fetch(request);
+    const res = freshenMonth(await env.ASSETS.fetch(request));
     return staging ? denyIndexing(res) : res;
   },
 } satisfies ExportedHandler<Env>;
 
+/**
+ * The "2 spots open · September" chip, kept true at request time.
+ *
+ * The month is baked in at build time (src/content/site.ts), which is right on
+ * the day of the deploy and wrong from the first of the next month until
+ * somebody happens to deploy again. A scarcity claim that is out of date is
+ * worse than none, so every HTML response has its [data-month] text replaced
+ * with the month it is being read in. Pacific time, same as the build.
+ *
+ * Only 200 HTML bodies. A 304 or a redirect carries no body to rewrite, and
+ * HTMLRewriter on a null body is not worth finding out about in production.
+ */
+function freshenMonth(res: Response): Response {
+  // tests/robots.spec.ts drives this handler inside Node, which has no
+  // HTMLRewriter. There the build-time month stands, which is what those
+  // tests are looking at anyway.
+  if (typeof HTMLRewriter === "undefined") return res;
+  if (res.status !== 200) return res;
+  if (!(res.headers.get("content-type") ?? "").includes("text/html")) return res;
+  const month = spotsMonth();
+  return new HTMLRewriter()
+    .on("[data-month]", {
+      text(chunk) {
+        // The text arrives in one or more chunks and a final empty one. Drop
+        // everything and write the month once, at the end.
+        if (chunk.lastInTextNode) chunk.replace(month);
+        else chunk.remove();
+      },
+    })
+    .transform(res);
+}
+
 async function handleLead(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-  const wantsJson = (request.headers.get("accept") ?? "").includes("application/json");
+  // Two callers, two answers. A browser form posts urlencoded with no Accept
+  // header and gets a 303, because a redirect is the only way a page without
+  // JavaScript can show a result. Anything that SENDS JSON is not a browser
+  // form and gets JSON back with a real status code, whether or not it
+  // remembered to ask for it: a 303 in reply to a JSON POST hides the error
+  // from every client that is not a browser, which is exactly the caller
+  // that needs to see it.
+  const contentType = request.headers.get("content-type") ?? "";
+  const wantsJson =
+    (request.headers.get("accept") ?? "").includes("application/json") ||
+    contentType.includes("application/json");
   const ip = request.headers.get("cf-connecting-ip") ?? "0.0.0.0";
 
   let input: LeadInput;

@@ -3,7 +3,7 @@ import Nav from "./Nav.astro";
 import Button from "./ui/Button.astro";
 import Chip from "./ui/Chip.astro";
 import Highlight from "./ui/Highlight.astro";
-import { site } from "@/content/site";
+import { site, spots } from "@/content/site";
 
 /**
  * Hero. 860px tall at 1440.
@@ -37,7 +37,11 @@ const fig = hero.figure;
 
     <div class="grid">
       <div class="col-copy">
-        <Chip>{hero.chip}</Chip>
+        {/* One wrapper span, so the chip's flex row still sees a single text
+            item and the gap does not open up between "open ·" and the month.
+            data-month is what the Worker rewrites on every request, so the
+            month in the HTML is the month it is being read in. */}
+        <Chip><span>{spots.label}{" · "}<span data-month>{spots.month}</span></span></Chip>
 
         <h1>
           {hero.headlineBefore}<br />
@@ -99,7 +103,6 @@ const fig = hero.figure;
         <span class="ann key a-measure">{fig.measure}</span>
 
         <span class="ann dim a-fig">{fig.figCaption}</span>
-        <span class="ann dim a-slot">{fig.slotNote}</span>
       </div>
 
       <!--
@@ -116,7 +119,6 @@ const fig = hero.figure;
             d="M4,140 C50,134 110,144 170,136 C210,131 240,139 256,131 L253,14 C210,22 160,10 110,17 C70,22 30,12 8,20 Z"></path>
         </svg>
         <img src="/brand/mark-charcoal.svg" alt="" width="214" height="167" />
-        <span class="tag">{fig.slotNoteMobile}</span>
       </div>
     </div>
   </div>
@@ -285,10 +287,6 @@ const fig = hero.figure;
     left: 22px;
     top: 436px;
   }
-  .a-slot {
-    right: 22px;
-    top: 436px;
-  }
 
   /* --- the scan strip ---------------------------------------------------- */
   .scanstrip {
@@ -353,11 +351,6 @@ const fig = hero.figure;
     top: 78px;
     width: 214px;
     height: auto;
-  }
-  .mslot .tag {
-    position: absolute;
-    left: 16px;
-    bottom: 12px;
   }
 
   /* --- the phone facts strip -------------------------------------------- */

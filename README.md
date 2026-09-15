@@ -294,7 +294,7 @@ Order of operations on a submission:
 5. Rate limit by hashed IP in KV. Five per hour with a token, two without.
 6. Insert into D1.
 7. Notify JD and confirm to the submitter through Resend, in `waitUntil`.
-8. JSON for the enhanced path, `303` to `/thanks` for the no-JavaScript path.
+8. JSON for the enhanced path, `303` to `/thanks` for the no-JavaScript path. The endpoint answers JSON to any request that sends `Accept: application/json` **or** posts a JSON body. Only a form-encoded POST with no Accept header, which is what a browser sends with scripting off, gets the redirect. A `curl -d '{}'` therefore gets a `400` with a reason, not a `303` that hides it.
 
 **The lead is written to D1 before either email is attempted**, so a Resend failure is a logged warning, not a lost lead and not a 500. Resend's free tier is 3,000 a month and 100 a day; the daily cap is the one that bites.
 
@@ -309,6 +309,7 @@ Nothing logs a full submission. IPs are SHA-256 hashed before they reach the rat
 ## Making a change
 
 1. Copy edits go in `src/content/site.ts`. Nowhere else.
+   - **The spots chip** is `SPOTS_OPEN` at the top of that file. One number, three chips. The month is never typed: it is derived at build time and again by the Worker on every request, so it cannot go stale between deploys. `tests/spots.spec.ts` holds it to that.
 2. Colour, type and spacing go in `src/styles/tokens.css`. Nowhere else.
 3. `npm run check && npm test` before committing.
 4. `npm run test:design` if you touched anything visual.

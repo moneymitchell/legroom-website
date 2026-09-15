@@ -75,6 +75,33 @@ export type Founder = {
   readonly quote: string;
 };
 
+/* --- the spots chip --------------------------------------------------------
+   The one number JD changes, in the one place it is read from. Every chip on
+   the site derives from it: the hero, the closing CTA, and the small one under
+   the email capture.
+
+   The month is NOT typed in. It is derived from the date here at build time,
+   and the Worker derives it again on every request (worker/index.ts,
+   freshenMonth) so the badge cannot go stale between deploys. A scarcity
+   claim that is out of date is worse than no claim at all.
+
+   Pacific time on purpose. On the evening of the 30th, UTC has already turned
+   the page, and a CI build would print next month a few hours early.
+   ----------------------------------------------------------------------- */
+
+export const SPOTS_OPEN: number = 2;
+export const SPOTS_TIMEZONE = "America/Los_Angeles";
+
+export function spotsMonth(date: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-US", { month: "long", timeZone: SPOTS_TIMEZONE }).format(date);
+}
+
+export const spots = {
+  count: SPOTS_OPEN,
+  label: `${SPOTS_OPEN} ${SPOTS_OPEN === 1 ? "spot" : "spots"} open`,
+  month: spotsMonth(),
+} as const;
+
 /* --- the site ------------------------------------------------------------- */
 
 export const site = {
@@ -109,7 +136,7 @@ export const site = {
 
   /* --- 1. hero ------------------------------------------------------------ */
   hero: {
-    chip: "2 spots open · September",
+    /* The chip is `spots` above, rendered in Hero.astro. */
     /* Three parts so the sharpie wraps exactly one word. Never two. */
     headlineBefore: "We give owners",
     headlineLead: "their",
@@ -135,8 +162,11 @@ export const site = {
       dimB: "B · owner time",
       measure: "C · legroom, what you get back",
       figCaption: "Fig. 1 · the seat, measured",
-      slotNote: "Illustration slot · 500 × 470",
-      slotNoteMobile: "Illustration slot · 350 × 280",
+      /* The "Illustration slot · 500 × 470" note that sat opposite the
+         caption, and its phone twin, were dimension labels off the design
+         canvas and shipped to production on 2026-09-15. Removed the same day.
+         If the corner ever gets real copy again, it goes here and the two
+         spans return to Hero.astro. */
     },
   },
 
@@ -168,7 +198,7 @@ export const site = {
       placeholder: "you@yourcompany.com",
       inputLabel: "Your email",
       submit: "Get my free breakdown",
-      chip: "2 spots open",
+      chip: spots.label,
       note: "One email back from a real person. No sequence, no spam.",
       /* Inline states for the progressive-enhancement handler. */
       sending: "Sending…",
@@ -354,7 +384,7 @@ export const site = {
     ] as readonly QARow[],
     ctaPrimary: "Book a free breakdown",
     ctaSecondary: "Send us a note",
-    chip: "2 spots open · September",
+    /* The chip is `spots` above, rendered in Founders.astro. */
   },
 
   founders: {
@@ -379,8 +409,11 @@ export const site = {
         pills: ["Golf", "Baking pizza", "Lifting", "Watch collecting", "Speakeasies"],
         stats: [
           { label: "In the game since", value: "2000" },
-          // href "#" is a placeholder: JD to supply the Dotted URL.
-          { label: "Currently building", value: "Dotted", href: "#" },
+          // Plain text until Dotted has a public URL. It shipped as href="#"
+          // on 2026-09-15, which is a link that goes nowhere: it took focus,
+          // was announced by screen readers, and jumped to the top of the
+          // page when clicked. Add `href` here and it becomes a link again.
+          { label: "Currently building", value: "Dotted" },
           { label: "Superpowers", value: "Design & Growth" },
         ],
         bio: "Former college athlete, early OpenAI beta tester. Spends his time finding the tool everyone else will be using in a year. Found the cheat codes so you don’t have to.",
@@ -475,10 +508,12 @@ export const site = {
 /**
  * Still waiting on JD.
  *
- *  1. The "Dotted" link on JD’s card is href="#".
+ *  1. "Dotted" on JD’s card is plain text until it has a public URL.
  *  2. Sean’s LinkedIn and personal site both point at JD’s URLs in the
  *     approved reference. Ported verbatim rather than guessed at.
- *  3. The hero illustration slot is an empty measured-drawing panel.
+ *  3. The hero illustration slot is an empty measured-drawing panel. The
+ *     canvas dimension labels that marked it are gone; the corner opposite
+ *     "Fig. 1" is empty until JD picks copy for it.
  */
 export const PLACEHOLDERS = [
   "Dotted URL on JD’s founder card",
