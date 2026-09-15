@@ -2,8 +2,22 @@
 
 Moving `legroomcompany.com` off the coming soon page and onto the new site.
 
-**Nothing in this file has been run.** The coming soon page stays up until JD
-says otherwise, after reading the QA results.
+**Run on 2026-09-15.** The apex and www serve `legroom-web` as of 15:14 PDT.
+What follows is kept as the procedure and the rollback; section 3.1 carries
+a note on the one thing that went wrong on the day.
+
+**What went wrong, so it does not happen twice.** The routes were detached
+from `legroom-website` by API and `wrangler deploy` ran within a second, but
+its custom domain step failed with code 10013 while Cloudflare was still
+tearing the old attachments down, and the script that ran it then waited on
+the apex without a timeout. The apex did not resolve from about 14:58 until
+15:14, when both hostnames were attached to `legroom-web` directly with
+`PUT /accounts/{id}/workers/domains` and a second `wrangler deploy` completed
+cleanly. Deleting a custom domain deletes its DNS record, and the zone's
+negative TTL is 1800s, so resolvers that looked during the gap could cache
+the miss for up to thirty minutes after it. Next time: attach by API PUT
+first, which moves the hostname in one call with no gap, and never poll
+production without a deadline.
 
 Read the whole thing once before starting. The cutover itself is about two
 minutes. The rollback is under one.
