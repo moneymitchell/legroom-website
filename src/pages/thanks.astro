@@ -6,7 +6,15 @@ import Chip from "@/components/ui/Chip.astro";
 import { site } from "@/content/site";
 import { bookHref } from "@/lib/links";
 
-/** Where a no-JS submission lands. Not indexed. */
+/**
+ * Where a no-JS submission lands. Not indexed.
+ *
+ * DO NOT DELETE THIS PAGE. It looks unreachable from the browser and it is
+ * load-bearing twice over: the Worker answers every no-JavaScript submission
+ * with a 303 to /thanks, so removing it turns those into a 404; and a pageview
+ * on a URL nobody can reach except by submitting is the one clean GA4
+ * conversion event this site has.
+ */
 const t = site.thanks;
 ---
 

@@ -359,9 +359,15 @@ async function readInput(request: Request): Promise<LeadInput> {
     const v = form.get(k);
     return typeof v === "string" ? v : undefined;
   };
+  // The same keys src/scripts/form.ts forwards on the enhanced path. The
+  // no-JavaScript path posts the raw form, so a field missing here is a
+  // field that never reaches D1 or either email, with no error anywhere.
   return {
     email: get("email") ?? "",
     name: get("name"),
+    first_name: get("first_name"),
+    last_name: get("last_name"),
+    website: get("website"),
     message: get("message"),
     source: get("source"),
     company: get("company"),

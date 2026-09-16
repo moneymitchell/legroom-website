@@ -115,7 +115,13 @@ export function initForms(siteKey: string): void {
         company: String(data.get("company") ?? ""),
         elapsed: String(Date.now() - mountedAt),
       };
-      for (const key of ["name", "message"] as const) {
+      // Every optional field the two forms can carry. The contact form grew
+      // first_name, last_name and website in R5 and this list did not grow
+      // with it, so for a day the enhanced path silently dropped all three:
+      // the alert had no name, the confirmation greeted nobody, and the one
+      // field the pre-call research needs never left the browser. The Worker
+      // reads the same keys in readInput; keep the two lists together.
+      for (const key of ["name", "first_name", "last_name", "website", "message"] as const) {
         const v = data.get(key);
         if (typeof v === "string" && v.trim()) payload[key] = v.trim();
       }
