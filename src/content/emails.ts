@@ -93,13 +93,16 @@ export const mail = {
         // Someone who gave a website has already done the thing we would
         // otherwise ask for, so asking again reads as though nobody looked.
         website
-          ? `I'll look at ${readable(website)} before we talk so we can skip the intro.`
+          ? `I'll dive into ${readable(website)} before we talk.`
           : "Reply with your website and I'll look before we talk.",
+        "Let me know if there's any pains you'd like to bring up beforehand.",
         "",
-        "If I don't hear back I'll nudge you once next week, then I'll see",
-        "myself out.",
+        "If I don't hear back I'll nudge you once next week.",
         "",
-        "JD",
+        // JD's sign-off, 2026-09-15, as written.
+        "Kind Regards,",
+        "JD Worcester",
+        "The Legroom Company™",
       ].join("\n"),
   },
 
