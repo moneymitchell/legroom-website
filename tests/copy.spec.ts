@@ -88,8 +88,13 @@ test("contractions use the typographic apostrophe, not a straight quote", () => 
   // The design is consistent about this and mixed quotes look sloppy at
   // Oswald's weight. Only word-internal quotes are checked, so the TypeScript
   // string delimiters are untouched.
+  //
+  // The SITE only. The emails are plain text from a person, and there the
+  // rule runs the other way: a typographer's apostrophe in a plain text email
+  // is one more thing that reads as generated. Their straight quotes are
+  // deliberate, per JD's rewrite of 2026-09-15, so emails.ts is not scanned.
   const offenders: string[] = [];
-  for (const file of [join(ROOT, "src/content/site.ts"), join(ROOT, "src/content/emails.ts")]) {
+  for (const file of [join(ROOT, "src/content/site.ts")]) {
     // Block-comment state is TRACKED, not guessed from how a line begins.
     // Skipping lines that start with a marker misses the body of every
     // multi-line /* */ comment, so prose written about the copy gets scanned
